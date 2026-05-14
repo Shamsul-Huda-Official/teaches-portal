@@ -1,4 +1,8 @@
 import { useLocation } from "react-router-dom"
+import { Menu, Sun, Moon } from "lucide-react"
+import { useTheme } from "../../store/ThemeContext";
+import { useAuth } from "../../store/AuthContext";
+import { getInitials } from "../../utils";
 
 const PAGE_TITLES = {
     "/dashboard": "Dashboard",
@@ -31,20 +35,46 @@ function getTitle(pathname) {
     return "-";
 }
 
-export default function Header() {
+export default function Header({ onMenuClick }) {
     const { pathname } = useLocation();
-    const today = new Date().toLocaleDateString("en-IN", {
-        weekday: "short",
-        day: "numeric",
-        month: "short",
-        year: "numeric"
-    })
+    const { theme, toggleTheme } = useTheme();
+    const { user } = useAuth();
+    
     return (
-        <header className="flex items-center justify-between px-6 border-b h-14 bg-slate-950 border-slate-800">
-            <h1 className="text-base font-medium text-slate-100">
-                {getTitle(pathname)}
-            </h1>
-            <span className="text-sm text-slate-400">{today}</span>
+        <header className="sticky top-0 z-30 flex items-center justify-between px-4 transition-colors duration-300 bg-white border-b md:px-6 h-14 dark:border-slate-700 border-slate-200 dark:bg-slate-900 backdrop-blur-md">
+            <div className="flex items-center gap-3">
+                <button
+                 onClick={ onMenuClick }
+                 className="p-2 transition-all rounded-lg md:hidden dark:text-slate-400 text-slate-500 dark:hover:text-slate-100 hover:text-slate-500 dark:hover:bg-white/10 hover:bg-black/5"
+                >
+                    <Menu size={18} />
+                </button>
+                <h1 className="text-sm font-semibold tracking-wide dark:text-slate-100 text-slate-800">
+                    {getTitle(pathname)}
+                </h1>
+            </div>
+            <div className="flex items-center gap-3">
+                <button
+                    onClick={toggleTheme} 
+                    className="p-2 transition-all rounded-lg dark:text-slate-400 text-slate-500 dark:hover:text-slate-100 hover:text-slate-900 dark:hover:bg-white/10 hover:bg-black/5"
+                >
+                    {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+                </button>
+                <div className="w-px h-5 bg-black/10 dark:bg-white/10" />
+                <div className="flex items-center gap-2.5">
+                    <div className="flex items-center justify-center flex-shrink-0 text-xs font-bold text-blue-400 border rounded-full border-blue-500/30 bg-blue-600/20 w-7 h-7">
+                        {getInitials(user?.name || "U")}
+                    </div>
+                    <div className="hidden md:block">
+                        <p className="text-xs font-semibold leading-none dark:text-slate-200 text-slate-700">
+                            {user?.name || "Admin"}
+                        </p>
+                        <p className="text-xs capitalize text-slate-400 dark:text-slate-500">
+                            {user?.role?.toLowerCase() || "admin"}
+                        </p>
+                    </div>
+                </div>
+            </div>
         </header>
     )
 }
