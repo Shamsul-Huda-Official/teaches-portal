@@ -336,15 +336,67 @@ export function Avatar({ name, src, size = "md"}) {
 
 // Confirm Modal
 export function ConfirmModal({ open, title, message, onConfirm, onCancel, loading }) {
-    return <h1></h1>
+    if (!open) return null;
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="w-full max-w-sm p-6 bg-white border shadow-2xl dark:bg-slate-900 dark:border-slate-700 border-slate-200 rounded-2xl">
+                <h3 className="mb-2 text-base font-semibold dark:text-slate-100 text-slate-800">
+                {title}
+                </h3>
+                <p className="mb-6 text-sm dark:text-slate-400 text-slate-500">
+                {message}
+                </p>
+                <div className="flex justify-end gap-3">
+                <Button variant="secondary" onClick={onCancel} disabled={loading}>
+                    Cancel
+                </Button>
+                <Button variant="danger" onClick={onConfirm} loading={loading}>
+                    Confirm
+                </Button>
+                </div>
+            </div>
+        </div>
+    )
 }
 
 // Pagination
 export function Pagination({ page, totalPage, onChange }) {
-    return <h1></h1>
+    if (totalPage <= 1) return null;
+    return (
+        <div className="flex items-center justify-end gap-1.5 mt-4">
+            <button 
+                onClick={() => onChange(page - 1)}
+                disabled={page === 1}
+                className="px-3 py-1.5 rounded-lg text-xs dark:bg-slate-800 bg-slate-100 dark:text-slate-400 text-slate-500 disabled:opacity-40 dark:hover:bg-slate-700 hover:bg-slate-200 transition-all"
+            >
+                Prev
+            </button>
+            {Array.from({ length: totalPage }, (_, i) => i + 1).map((p) => (
+                <button
+                    key={p}
+                    onClick={() => onChange(p)}
+                    className={`w-8 h-8 rounded-lg text-xs font-medium transition-all
+                            ${ p === page
+                                ? "bg-blue-600 text-white"
+                                : "dark:bg-slate-800 bg-slate-100 dark:text-slate-400 text-slate-500 dark:hover:bg-slate-700 hover:bg-slate-200"
+                             }
+                        `}
+                >
+                    {p}      
+                </button>
+            ))}
+        </div>
+    )
 }
 
 // Section Header (inside a card)
 export function SectionHeader({ title, action }) {
-    return <h1></h1>
+    return(
+        <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold tracking-wide uppercase dark:text-slate-200 text-slate-700">
+                {title}
+            </h3>
+            {action}
+        </div>
+    )
 }
