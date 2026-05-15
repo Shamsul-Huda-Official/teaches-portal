@@ -360,8 +360,9 @@ export function ConfirmModal({ open, title, message, onConfirm, onCancel, loadin
 }
 
 // Pagination
-export function Pagination({ page, totalPage, onChange }) {
-    if (totalPage <= 1) return null;
+export function Pagination({ page, totalPages, onChange }) {
+    if (totalPages <= 1) return null;
+    console.log("Total Page: ", totalPages)
     return (
         <div className="flex items-center justify-end gap-1.5 mt-4">
             <button 
@@ -371,7 +372,7 @@ export function Pagination({ page, totalPage, onChange }) {
             >
                 Prev
             </button>
-            {Array.from({ length: totalPage }, (_, i) => i + 1).map((p) => (
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
                 <button
                     key={p}
                     onClick={() => onChange(p)}
@@ -385,6 +386,11 @@ export function Pagination({ page, totalPage, onChange }) {
                     {p}      
                 </button>
             ))}
+            <button 
+                onClick={() => onChange(page + 1)}
+                className="px-3 py-1.5 rounded-lg text-xs dark:bg-slate-800 bg-slate-100 dark:text-slate-400 text-slate-500 disabled:opacity-40 dark:hover:bg-slate-700 hover:bg-slate-200 transition-all">
+                    Next         
+            </button>
         </div>
     )
 }
