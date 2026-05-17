@@ -70,14 +70,19 @@ export default function TeachersListPage() {
                 title="Teachers"
                 subtitle={`${MOCK_TEACHERS.length} total`}
                 actions={
-                    <>
+                    <div className="flex flex-wrap justify-end gap-2">
                         <Button
                             variant="secondary"
                             onClick={() => navigate("/teachers/bulk")} 
                         >
-                            <Upload size={14} /> Bulk Upload
+                            <Upload size={14} /> <span className="hidden sm:inline"> Bulk Upload</span>
                         </Button>
-                    </>
+                        <Button
+                            onClick={() => navigate("/teachers/create")}
+                        >
+                            <Plus size={14} /> <span className="hidden sm:inline">Add Student</span>
+                        </Button>
+                    </div>
                 } 
              />
              

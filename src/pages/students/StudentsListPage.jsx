@@ -78,18 +78,24 @@ export default function StudentsListPage() {
     const columns = [
         {
             key: "name",
-            label: "Student",
+            label: "Teacher",
             render: (v, row) => (
             <div className="flex items-center gap-3">
                 <Avatar name={v} src={row.profileImageUrl} size="sm" />
                 <div>
                 <p className="text-sm font-medium dark:text-slate-100 text-slate-800">{v}</p>
-                <p className="text-xs dark:text-slate-500 text-slate-400">{row.admissionNumber}</p>
+                <p className="text-xs dark:text-slate-500 text-slate-400">{row.phone}</p>
                 </div>
             </div>
             ),
         },
-        { key: "rollNumber", label: "Roll", },
+        {
+            key: "email",
+            label: "Email",
+            render: (v) => (
+            <span className="hidden text-sm sm:block dark:text-slate-300 text-slate-600">{v}</span>
+            ),
+        },
         {
             key: "isActive",
             label: "Status",
@@ -106,18 +112,16 @@ export default function StudentsListPage() {
                 subtitle={`${MOCK_STUDENTS.length} total`}
                 actions={
                     <div className="flex flex-wrap justify-end gap-2">
-                        <div className="hidden md:block">
                             <Button
                                 variant="secondary"
                                 onClick={() => navigate("/students/bulk")} 
                             >
-                                <Upload size={14} /> Upload Students
+                                <Upload size={14} /> <span className="hidden sm:inline"> Bulk Upload</span>
                             </Button>
-                        </div>
                         <Button
                             onClick={() => navigate("/students/create")}
                         >
-                            <Plus size={14} /> Add Student
+                            <Plus size={14} /> <span className="hidden sm:inline">Add Student</span>
                         </Button>
                     </div>
                 }
