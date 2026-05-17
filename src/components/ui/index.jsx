@@ -227,7 +227,7 @@ export function EmptyState({ title = "No data found", subtitle, action }) {
 export function Table({ columns, data, onRowClick }) {
     return (
         <div className="overflow-x-auto border rounded-2xl dark:border-slate-800 border-slate-200">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[400px]">
                 <thead>
                     <tr className="border border-b dark:border-slate-800 border-slate-200 dark:bg-slate-800/50 bg-slate-50">
                         {columns.map((col) => (
