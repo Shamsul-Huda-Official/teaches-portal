@@ -106,12 +106,14 @@ export default function StudentsListPage() {
                 subtitle={`${MOCK_STUDENTS.length} total`}
                 actions={
                     <div className="flex flex-wrap justify-end gap-2">
-                        <Button
-                            variant="secondary"
-                            onClick={() => navigate("/students/bulk")} 
-                        >
-                            <Upload size={14} /> Upload Students
-                        </Button>
+                        <div className="hidden md:block">
+                            <Button
+                                variant="secondary"
+                                onClick={() => navigate("/students/bulk")} 
+                            >
+                                <Upload size={14} /> Upload Students
+                            </Button>
+                        </div>
                         <Button
                             onClick={() => navigate("/students/create")}
                         >
@@ -123,11 +125,13 @@ export default function StudentsListPage() {
 
             <div className="flex flex-wrap items-center justify-center gap-3 mb-6">
                 <Select
+                    placeholder="Select Class"
                     options={MOCK_CLASSES}
                     value={classId}
                     onChange={handleClass} 
                 />
                 <Select
+                    placeholder="Select Division"
                     options={divisions}
                     value={divisionId} 
                     onChange={handleDivision}

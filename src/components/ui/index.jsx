@@ -60,7 +60,7 @@ export function Input({ label, error, hint, className = "", ...props}) {
 }
 
 // Select 
-export function Select({ label, error, options = [], className="", ...props}) {
+export function Select({ label, error, options = [], placeholder = "Select", className="", ...props}) {
     return (
         <div className="flex flex-col gap-1.5">
             {label && (
@@ -73,8 +73,8 @@ export function Select({ label, error, options = [], className="", ...props}) {
                     ${className}
                 `}
                 {...props}>
-                    <option value="">-- Select --</option>
-                    {options.map((o) => (
+                    <option value="">{placeholder}</option>
+                    {options.map((o) => ( 
                         <option key={o.value} value={o.value}>
                             {o.label}
                         </option>
@@ -280,7 +280,7 @@ export function SearchInput ({ value, onChange, placeholder = "Search..."}) {
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 placeholder={placeholder} 
-                className="w-64 py-2 pl-6 pr-4 text-sm transition-all duration-150 bg-white border rounded-xl dark:bg-slate-800/60 dark:border-slate-700 border-slate-200 dark:text-slate-100 text-slate-800 dark:placeholder:text-slate-500 placeholder:text-slate-400 focus:outline-none focus:ring-2 dark:focus:ring-blue-500/30 focus:ring-blue-500/20 dark:focus:border-blue-500/50 focus:border-blue-400"
+                className="w-64 py-2 pl-6 pr-4 ml-1 text-sm transition-all duration-150 bg-white border rounded-xl dark:bg-slate-800/60 dark:border-slate-700 border-slate-200 dark:text-slate-100 text-slate-800 dark:placeholder:text-slate-500 placeholder:text-slate-400 focus:outline-none focus:ring-2 dark:focus:ring-blue-500/30 focus:ring-blue-500/20 dark:focus:border-blue-500/50 focus:border-blue-400"
             />
         </div>
     )
