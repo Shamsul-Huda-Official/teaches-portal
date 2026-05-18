@@ -20,7 +20,7 @@ const INIT = {
 export default function StudentCreatePage() {
     const navigate = useNavigate();
     const [form, setForm] = useState(INIT);
-    const [errors, setErrors] = useState({})
+    const [error, setError] = useState({})
     const [loading, setLoading] = useState(false)
 
     const divisions = form.classId ? (MOCK_DIVISION[form.classId] || []) : [];
@@ -34,7 +34,7 @@ export default function StudentCreatePage() {
             if (!form.parentName.trim()) e.parentName = "Required"
             if (!form.classId) e.classId = "Required"
             if (!form.divisionId) e.divisionId = "Required"
-            setErrors(e)
+            setError(e)
             return Object.keys(e).length === 0 
     }
 
@@ -65,7 +65,7 @@ export default function StudentCreatePage() {
                             placeholder="e.g Aakhil Mohammed"
                             value={form.name}
                             onChange={set("name")}
-                            error={errors.name}
+                            error={error.name}
                         />
                     </div>
 
@@ -74,7 +74,7 @@ export default function StudentCreatePage() {
                         placeholder="e.g 071"
                         value={form.admissionNumber}
                         onChange={set("admissionNumber")}
-                        error={errors.admissionNumber}
+                        error={error.admissionNumber}
                         hint="Default Password"
                     />
 
@@ -83,14 +83,14 @@ export default function StudentCreatePage() {
                         placeholder="e.g. 01"
                         value={form.rollNumber}
                         onChange={set("rollNumber")}
-                        error={errors.rollNumber}
+                        error={error.rollNumber}
                     />
                     <Input
                         label="Phone"
                         placeholder="e.g. 9876543210"
                         value={form.phone}
                         onChange={set("phone")}
-                        error={errors.phone}
+                        error={error.phone}
                         hint="Used as login username"
                     />
                     <Input
@@ -107,7 +107,7 @@ export default function StudentCreatePage() {
                         placeholder="e.g. Hassan K"
                         value={form.parentName}
                         onChange={set("parentName")}
-                        error={errors.parentName}
+                        error={error.parentName}
                         />
                     </div>
             
@@ -116,14 +116,14 @@ export default function StudentCreatePage() {
                         options={MOCK_CLASSES}
                         value={form.classId}
                         onChange={setClass}
-                        error={errors.classId}
+                        error={error.classId}
                     />
                     <Select
                         label="Division"
                         options={divisions}
                         value={form.divisionId}
                         onChange={set("divisionId")}
-                        error={errors.divisionId}
+                        error={error.divisionId}
                         disabled={!form.classId}
                     />
                     <div className="col-span-2 flex gap-3 pt-2">

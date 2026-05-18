@@ -44,7 +44,7 @@ export default function SubjectCreatePage() {
   }
 
   return (
-    <div className="max-w-lg">
+    <div>
       <PageHeader
         title="Add Subject"
         subtitle="Create a new subject for a class division"

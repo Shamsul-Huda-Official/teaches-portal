@@ -50,7 +50,7 @@ export default function PeriodCreatePage() {
     }
 
     return (
-        <div className="max-w-lg">
+        <div>
             <PageHeader
                 title="Add Periods"
                 subtitle="Periods are auto-named: Period 1, Period 2..."
