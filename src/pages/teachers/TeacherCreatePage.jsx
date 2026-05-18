@@ -19,7 +19,7 @@ const INIT = {
 export default function TeacherCreatePage() {
   const navigate = useNavigate()
   const [form,    setForm]    = useState(INIT)
-  const [errors,  setErrors]  = useState({})
+  const [error,  setError]  = useState({})
   const [loading, setLoading] = useState(false)
   const [image,   setImage]   = useState(null)
   const [preview, setPreview] = useState(null)
@@ -32,7 +32,7 @@ export default function TeacherCreatePage() {
     if (!form.password.trim()) e.password = "Password is required"
     if (form.password.length < 6) e.password = "Minimum 6 characters"
     if (!form.role)            e.role     = "Role is required"
-    setErrors(e)
+    setError(e)
     return Object.keys(e).length === 0
   }
 
@@ -49,8 +49,6 @@ export default function TeacherCreatePage() {
     e.preventDefault()
     if (!validate()) return
     setLoading(true)
-    // TODO: replace with API call
-    // send form + image to backend
     setTimeout(() => {
       setLoading(false)
       navigate("/teachers")
@@ -58,7 +56,7 @@ export default function TeacherCreatePage() {
   }
 
   return (
-    <div className="max-w-lg">
+    <div>
       <PageHeader
         title="Add Teacher"
         subtitle="Create a new teacher account"
@@ -108,7 +106,7 @@ export default function TeacherCreatePage() {
             placeholder="e.g. Unais Hudawi"
             value={form.name}
             onChange={set("name")}
-            error={errors.name}
+            error={error.name}
           />
 
           <Input
@@ -116,7 +114,7 @@ export default function TeacherCreatePage() {
             placeholder="e.g. 9876543210"
             value={form.phone}
             onChange={set("phone")}
-            error={errors.phone}
+            error={error.phone}
             hint="Used as login username"
           />
 
@@ -126,7 +124,7 @@ export default function TeacherCreatePage() {
             placeholder="e.g. teacher@school.com"
             value={form.email}
             onChange={set("email")}
-            error={errors.email}
+            error={error.email}
           />
 
           <Input
@@ -135,7 +133,7 @@ export default function TeacherCreatePage() {
             placeholder="Min. 6 characters"
             value={form.password}
             onChange={set("password")}
-            error={errors.password}
+            error={error.password}
           />
 
           <Select
@@ -143,7 +141,7 @@ export default function TeacherCreatePage() {
             options={ROLE_OPTIONS}
             value={form.role}
             onChange={set("role")}
-            error={errors.role}
+            error={error.role}
           />
 
           <div className="flex gap-3 pt-2">

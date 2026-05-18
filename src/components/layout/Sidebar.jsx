@@ -69,6 +69,7 @@ const NAV_ITEMS = [
     children: [
       { label: "All Periods", to: "/periods" },
       { label: "Add Period",  to: "/periods/create" },
+      { label: "Assign Period", to: "/periods/:id/assign"}
     ],
   },
   {
