@@ -4,7 +4,7 @@ import { ArrowLeft, Camera } from "lucide-react"
 import {
   Button, Card, Badge, Tabs, Avatar, SectionHeader
 } from "../../components/ui"
-import { ATTENDANCE_STATUS, STATUS_COLORS } from "../../constants"
+import { ATTENDANCE_STATUS} from "../../constants"
  
 const MOCK_STUDENT = {
   id:              "1",
@@ -110,10 +110,124 @@ function DonutChart({ stats }) { // Donut Chart
   )
 }
 
+function AttendanceTab({ stats }) {
+  const statItems = [
+    { label: "Total Attendance", value: stats.total, color:"slate" },
+    { label: "Total Present", value: stats.present, color:"green" },
+    { label: "Total Absent", value: stats.absent, color:"red" },
+    { label: "Total Official Leave", value: stats.total, color:"blue" },
+    { label: "Total Medical Leave", value: stats.total, color:"purple" },
+    {
+      label: "Recovery Status",
+      value: "Pending",
+      color: "amber",
+    }
+  ]
+  
+  const colorMap = {
+    slate: "dark:bg-slate-800 bg-slate-50 dark:text-slate-100 text-slate-800",
+    red: "bg-red-500/10 text-red-500",
+    blue: "bg-purple-500/10 text-blue-500",
+    purple: "bg-purple-500/10 text-purple-500",
+    amber: "bg-amber-500/10 text-amber-500",
+  }
+  
+  return (
+    <div>
+      <h1>Attendance Tab</h1>
+    </div>
+  )
+}
+
+function RecoveryTab({ records, onSave }) {
+  const [ statuses, setStatuses ] = useState(
+    Object.fromEntries(records.map((r) => [r.id, r.status]))
+  )
+  const setStatus = (id, val) =>
+    setStatuses((p) => ({ ...p, [id]: val}))
+  
+  const handleRecoverAll = () => {
+    const all = Object.fromEntries(records.map((r) => [r.id, "RECOVERED"]))
+    setStatuses(all)
+  }
+  
+  return (
+    <h1>Revovert AL </h1>
+  )
+}
+
 export default function StudentDetailPage() {
-    return (
-        <div>
-            <h1>Student Detail</h1>
+  const { id } = useParams()
+  const navigate = useNavigate()
+  const [tab, setTab] = useState("attendance")
+  const student = MOCK_STUDENT
+  const stats = MOCK_ATTENDANCE_STATS
+  const records = MOCK_ABSENT_RECORDS
+  
+  const handleSave = () => {
+    console.log("Save recovery status");
+  }
+  return (
+      <div>
+        <button
+          onClick={() => navigate("/students")} 
+          className="flex items-center gap-2 mb-5 text-sm transition-all dark:text-slate-400 text-slate-500 hover:dark:text-slate-200 hover:text-slate-700"
+        >
+          <ArrowLeft size={15} /> Back to Students
+        </button>
+        <Card className="p-6 mb-5">
+          <div className="flex flex-col gap-6 md:flex-row">
+            {/* avatar  */}
+            <div className="flex flex-col items-center flex-shrink-0 gap-2">
+              <div className="relative">
+                <Avatar
+                  name={student.name}
+                  src={student.profileImageUrl}
+                  size="xl" 
+                />
+              </div>
+              <Badge color={student.isActive ? "green": "red"}>
+                {student.isActive ? "Active": "Inactive"}
+              </Badge>
+            </div>
+            <div className="grid flex-1 grid-cols-2 gap-3">
+              {[
+                { label: "Name",            value: student.name            },
+                { label: "Phone",           value: student.phone           },
+                { label: "Class",           value: student.className       },
+                { label: "Division",        value: student.divisionName    },
+                { label: "Roll No.",        value: student.rollNumber      },
+                { label: "Admission No.",   value: student.admissionNumber },
+                { label: "Parent",          value: student.parentName      },
+                { label: "Email",           value: student.email || "—"   },
+              ].map(({ label, value }) => (
+                <div
+                  key={label} 
+                  className="gap-2 p-2 px-3 dark:bg-slate-800/50 bg-slate-50 rounded-xl">
+                  <p className="text-xs dark:text-slate-500 text-slate-400">
+                    {label}
+                  </p>
+                  <p className="mt-0.5 text-sm font-medium dark:text-slate-100 text-slate-800">
+                    {value}
+                  </p>
+                </div>
+              ))}
+            </div>
+            
+          </div>
+        </Card>
+        <div className="mb-4">
+          <Tabs
+            tabs={[
+              {label: "Attendance", value: "attendance"},
+              {label: "Recovery Status", value: "recovery"}
+            ]} 
+            active={tab}
+            onChange={setTab}
+          />
         </div>
-    )
+        {tab === "attendance" && <AttendanceTab stats={stats} />}
+        {tab === "recovery" && <RecoveryTab records={records} onSave={handleSave} />}
+      </div>
+  )
 }
