@@ -74,7 +74,10 @@ function PeriodAttendance({ period, students, attendance, onStatusChange }) {
   const [collapsed, setCollapsed] = useState(false)
 
   const absentCount = students.filter(
-    (s) => attendance[`${s.id}-${period.id}`] === "ABSENT"
+    (s) => 
+        attendance[`${s.id}-${period.id}`] === "ABSENT" ||
+        attendance[`${s.id}-${period.id}`] === "MEDICAL" ||
+        attendance[`${s.id}-${period.id}`] === "EXCUSED"
   ).length
 
   return (
