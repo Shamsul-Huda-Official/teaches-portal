@@ -1,7 +1,6 @@
 import { Users, GraduationCap, School, BookOpen, Clock, TrendingUp } from "lucide-react"
 import { StatCard, Card, SectionHeader } from "../../components/ui"
 
-// ─── MOCK DATA ────────────────────────────────────────────────────────────────
 const MOCK_STATS = {
   students: 312,
   teachers: 24,
@@ -40,22 +39,18 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-6">
 
-      {/* Stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         {stats.map((s) => (
           <StatCard key={s.label} {...s} />
         ))}
       </div>
 
-      {/* Today's overview */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
-        {/* Attendance summary */}
         <Card className="p-5 lg:col-span-1">
           <SectionHeader title="Today's Attendance" />
           <div className="flex flex-col gap-3">
 
-            {/* Progress bar */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-xs dark:text-slate-400 text-slate-500">Present rate</span>
@@ -69,7 +64,6 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Counts */}
             <div className="grid grid-cols-2 gap-2 mt-1">
               {[
                 { label: "Present", value: present, color: "text-emerald-400" },
@@ -89,7 +83,6 @@ export default function DashboardPage() {
           </div>
         </Card>
 
-        {/* Recent absences */}
         <Card className="p-5 lg:col-span-2">
           <SectionHeader title="Recent Absences Today" />
           <div className="flex flex-col divide-y dark:divide-slate-800 divide-slate-100">
