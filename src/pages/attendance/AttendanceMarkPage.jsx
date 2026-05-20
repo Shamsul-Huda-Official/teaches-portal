@@ -73,6 +73,46 @@ const today = new Date().toISOString().split("T")[0]
 function PeriodAttendance({ period, students, attendance, onStatusChange }) {
   const [collapsed, setCollapsed] = useState(false)
 
+  function StatusSelect({ value, onChange }) {
+    const [open, setOpen] = useState(false)
+    const cfg = STATUS_CONFIG[value] || STATUS_CONFIG.PRESENT
+
+    return (
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          className={`w-8 h-8 rounded-lg border text-xs font-bold flex items-center justify-center ${cfg.activeColor}`}
+          title={value}
+        >
+          {cfg.label}
+        </button>
+
+        {open && (
+          <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-slate-800 border dark:border-slate-700 border-slate-200 rounded-md shadow-sm z-50">
+            {Object.entries(STATUS_CONFIG).map(([s, c]) => {
+              const textClass = (c.color || "").split(" ").find(t => t.startsWith("text-"))
+                || (c.activeColor || "").split(" ").find(t => t.startsWith("text-"))
+                || "text-slate-800"
+
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  onMouseDown={(e) => { e.preventDefault(); onChange(s); setOpen(false) }}
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"
+                >
+                  <span className={`${textClass} font-bold`}>{s.charAt(0) + s.slice(1).toLowerCase()}</span>
+                </button>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    )
+  }
+
   const absentCount = students.filter(
     (s) => 
         attendance[`${s.id}-${period.id}`] === "ABSENT" ||
@@ -81,7 +121,7 @@ function PeriodAttendance({ period, students, attendance, onStatusChange }) {
   ).length
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-visible">
       <button
         onClick={() => setCollapsed((p) => !p)}
         className="w-full flex items-center justify-between px-4 py-3 dark:hover:bg-slate-800/50 hover:bg-slate-50 transition-all"
@@ -133,20 +173,10 @@ function PeriodAttendance({ period, students, attendance, onStatusChange }) {
                 </div>
 
                 <div className="flex gap-1.5">
-                  {Object.entries(STATUS_CONFIG).map(([s, cfg]) => (
-                    <button
-                      key={s}
-                      onClick={() => onStatusChange(student.id, period.id, s)}
-                      className={`
-                        w-8 h-8 rounded-lg border text-xs font-bold
-                        transition-all duration-150 flex items-center justify-center
-                        ${status === s ? cfg.activeColor : cfg.color}
-                      `}
-                      title={s}
-                    >
-                      {cfg.label}
-                    </button>
-                  ))}
+                  <StatusSelect
+                    value={status}
+                    onChange={(s) => onStatusChange(student.id, period.id, s)}
+                  />
                 </div>
               </div>
             )
@@ -159,10 +189,10 @@ function PeriodAttendance({ period, students, attendance, onStatusChange }) {
 
 function RegularAttendance({ students, attendance, onStatusChange, type }) {
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-visible">
       <div className="px-4 py-3 border-b dark:border-slate-800 border-slate-100">
         <p className="text-sm font-semibold dark:text-slate-100 text-slate-800">
-          {type === "MORNING" ? "🌅 Morning Attendance" : "🌇 Afternoon Attendance"}
+          {type === "MORNING" ? "Morning Attendance" : "Afternoon Attendance"}
         </p>
       </div>
       <div className="divide-y dark:divide-slate-800 divide-slate-100">
@@ -187,20 +217,10 @@ function RegularAttendance({ students, attendance, onStatusChange, type }) {
                 </div>
               </div>
               <div className="flex gap-1.5">
-                {Object.entries(STATUS_CONFIG).map(([s, cfg]) => (
-                  <button
-                    key={s}
-                    onClick={() => onStatusChange(student.id, type, s)}
-                    className={`
-                      w-8 h-8 rounded-lg border text-xs font-bold
-                      transition-all duration-150 flex items-center justify-center
-                      ${status === s ? cfg.activeColor : cfg.color}
-                    `}
-                    title={s}
-                  >
-                    {cfg.label}
-                  </button>
-                ))}
+                <StatusSelect
+                  value={status}
+                  onChange={(s) => onStatusChange(student.id, type, s)}
+                />
               </div>
             </div>
           )
@@ -213,6 +233,7 @@ function RegularAttendance({ students, attendance, onStatusChange, type }) {
 export default function AttendanceMarkPage() {
   const [classId,    setClassId]    = useState("")
   const [divisionId, setDivisionId] = useState("")
+  const [period, setPeriod] = useState("")
   const [type,       setType]       = useState("PERIOD")
   const [date,       setDate]       = useState(today)
   const [attendance, setAttendance] = useState({})
@@ -226,15 +247,32 @@ export default function AttendanceMarkPage() {
 
   const divisions = classId ? (MOCK_DIVISIONS[classId] || []) : []
 
+  const periodOptions = periods.map((p) => ({
+    value: p.id,
+    label: p.name,
+  }))
+
+  const filteredPeriods = periods.filter(
+    (p) => p.id === period
+  )
+
   const handleClass = (e) => {
     setClassId(e.target.value)
     setDivisionId("")
+    setPeriod("")
     setAttendance({})
     setSaved(false)
   }
 
   const handleDivision = (e) => {
     setDivisionId(e.target.value)
+    setPeriod("")
+    setAttendance({})
+    setSaved(false)
+  }
+
+  const handlePeriod = (e) => {
+    setPeriod(e.target.value)
     setAttendance({})
     setSaved(false)
   }
@@ -309,17 +347,23 @@ export default function AttendanceMarkPage() {
       <Card className="p-4 mb-5">
         <div className="grid grid-cols-2 gap-3">
           <Select
-            placeholder="— Select Class —"
+            placeholder="Select Class"
             options={MOCK_CLASSES}
             value={classId}
             onChange={handleClass}
           />
           <Select
-            placeholder="— Select Division —"
+            placeholder="Select Division"
             options={divisions}
             value={divisionId}
             onChange={handleDivision}
             disabled={!classId}
+          />
+          <Select
+            placeholder="Select Period"
+            options={periodOptions}
+            value={period}
+            onChange={handlePeriod} 
           />
           <Select
             label=""
@@ -389,18 +433,6 @@ export default function AttendanceMarkPage() {
             </Button>
           </div>
 
-          <div className="flex gap-3 mb-4 flex-wrap">
-            {Object.entries(STATUS_CONFIG).map(([s, cfg]) => (
-              <div key={s} className="flex items-center gap-1.5">
-                <div className={`w-6 h-6 rounded-md border text-xs font-bold flex items-center justify-center ${cfg.activeColor}`}>
-                  {cfg.label}
-                </div>
-                <span className="text-xs dark:text-slate-400 text-slate-500 capitalize">
-                  {s.charAt(0) + s.slice(1).toLowerCase()}
-                </span>
-              </div>
-            ))}
-          </div>
 
           {type === "PERIOD" && (
             <div className="flex flex-col gap-3">
@@ -411,7 +443,7 @@ export default function AttendanceMarkPage() {
                   <p className="dark:text-slate-500 text-slate-400 text-xs mt-1">Add periods for this class division first</p>
                 </div>
               ) : (
-                periods.map((period) => (
+                filteredPeriods.map((period) => (
                   <PeriodAttendance
                     key={period.id}
                     period={period}
