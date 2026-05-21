@@ -12,28 +12,61 @@ const COLUMNS = [
   { key: "role",     label: "Role",      required: true  },
 ]
 
+const UNIQUE_FIELDS = [
+  { key: "phone", label: "Phone" },
+  { key: "email", label: "Email" },
+]
+
+function findDuplicates(rows) {
+  const seen   = {}
+  const dupMap = {}
+
+  UNIQUE_FIELDS.forEach(({ key, label }) => {
+    rows.forEach((row, idx) => {
+      const val = row[key]?.trim().toLowerCase()
+      if (!val) return
+      const mapKey = `${key}:${val}`
+      if (seen[mapKey] !== undefined) {
+        if (!dupMap[idx]) dupMap[idx] = []
+        dupMap[idx].push(`Duplicate ${label}`)
+        const firstIdx = seen[mapKey]
+        if (!dupMap[firstIdx]) dupMap[firstIdx] = []
+        if (!dupMap[firstIdx].includes(`Duplicate ${label}`)) {
+          dupMap[firstIdx].push(`Duplicate ${label}`)
+        }
+      } else {
+        seen[mapKey] = idx
+      }
+    })
+  })
+
+  return dupMap
+}
+
 function validateRow(row) {
   const errors = []
   if (!row.name?.trim())     errors.push("Name required")
   if (!row.phone?.trim())    errors.push("Phone required")
   if (!row.email?.trim())    errors.push("Email required")
   if (!row.password?.trim()) errors.push("Password required")
-  if (row.password && row.password.trim().length < 6)
+  if (row.password?.trim() && row.password.trim().length < 6)
     errors.push("Password min 6 chars")
   if (!row.role?.trim())     errors.push("Role required")
-  if (row.role && !["TEACHER","ADMIN"].includes(row.role.trim().toUpperCase()))
+  if (row.role?.trim() && !["TEACHER", "ADMIN"].includes(row.role.trim().toUpperCase()))
     errors.push("Role must be TEACHER or ADMIN")
   if (row.phone && !/^\d{10}$/.test(row.phone.trim()))
     errors.push("Phone must be 10 digits")
+  if (row.email?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email.trim()))
+    errors.push("Invalid email format")
   return errors
 }
 
 function downloadTemplate() {
   const headers = COLUMNS.map((c) => c.label)
   const sample  = ["Unais Hudawi", "9876543210", "unais@mail.com", "pass123", "TEACHER"]
-  const ws = XLSX.utils.aoa_to_sheet([headers, sample])
-  ws["!cols"] = COLUMNS.map(() => ({ wch: 20 }))
-  const wb = XLSX.utils.book_new()
+  const ws      = XLSX.utils.aoa_to_sheet([headers, sample])
+  ws["!cols"]   = COLUMNS.map(() => ({ wch: 20 }))
+  const wb      = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, "Teachers")
   XLSX.writeFile(wb, "teachers_template.xlsx")
 }
@@ -45,26 +78,31 @@ function EditableCell({ value, onChange, hasError }) {
       onChange={(e) => onChange(e.target.value)}
       className={`
         w-full px-2 py-1.5 rounded-lg text-xs transition-all
-        dark:bg-slate-800 bg-white
-        dark:text-slate-100 text-slate-800
+        dark:bg-slate-800 bg-white dark:text-slate-100 text-slate-800
         focus:outline-none focus:ring-2
-        dark:focus:ring-blue-500/30 focus:ring-blue-500/20
-        border
-        ${hasError
-          ? "border-red-500/50 dark:bg-red-500/5"
-          : "dark:border-slate-700 border-slate-200"
-        }
+        dark:focus:ring-blue-500/30 focus:ring-blue-500/20 border
+        ${hasError ? "border-red-500/50 dark:bg-red-500/5" : "dark:border-slate-700 border-slate-200"}
       `}
     />
   )
 }
 
 export default function TeacherBulkPage() {
-  const navigate  = useNavigate()
-  const fileRef   = useRef(null)
+  const navigate = useNavigate()
+  const fileRef  = useRef(null)
   const [rows,    setRows]    = useState([])
   const [loading, setLoading] = useState(false)
   const [done,    setDone]    = useState(false)
+
+  const dupMap = findDuplicates(rows)
+
+  const getRowErrors = (row, idx) => [
+    ...validateRow(row),
+    ...(dupMap[idx] || []),
+  ]
+
+  const validRows   = rows.filter((_, i) => getRowErrors(rows[i], i).length === 0)
+  const invalidRows = rows.filter((_, i) => getRowErrors(rows[i], i).length > 0)
 
   const handleFile = (e) => {
     const file = e.target.files[0]
@@ -74,7 +112,6 @@ export default function TeacherBulkPage() {
       const wb   = XLSX.read(evt.target.result, { type: "binary" })
       const ws   = wb.Sheets[wb.SheetNames[0]]
       const data = XLSX.utils.sheet_to_json(ws, { defval: "" })
-
       const colMap = {
         "Full Name": "name",
         "Phone":     "phone",
@@ -82,7 +119,6 @@ export default function TeacherBulkPage() {
         "Password":  "password",
         "Role":      "role",
       }
-
       const normalized = data.map((r, i) => {
         const row = { _id: i }
         Object.entries(colMap).forEach(([excelCol, key]) => {
@@ -90,7 +126,6 @@ export default function TeacherBulkPage() {
         })
         return row
       })
-
       setRows(normalized)
       setDone(false)
     }
@@ -103,17 +138,16 @@ export default function TeacherBulkPage() {
     setDone(false)
   }
 
-  const deleteRow = (rowIdx) =>
+  const deleteRow = (rowIdx) => {
     setRows((prev) => prev.filter((_, i) => i !== rowIdx))
+    setDone(false)
+  }
 
   const addRow = () =>
     setRows((prev) => [
       ...prev,
       { _id: Date.now(), name: "", phone: "", email: "", password: "", role: "TEACHER" },
     ])
-
-  const validRows   = rows.filter((r) => validateRow(r).length === 0)
-  const invalidRows = rows.filter((r) => validateRow(r).length > 0)
 
   const handleUpload = async () => {
     if (validRows.length === 0) return
@@ -129,14 +163,12 @@ export default function TeacherBulkPage() {
   }
 
   return (
-    <div>
+    <div className="max-w-4xl">
       <PageHeader
         title="Bulk Upload Teachers"
         subtitle="Download the template, fill it in Excel, then upload"
         actions={
-          <Button variant="secondary" onClick={() => navigate("/teachers")}>
-            Cancel
-          </Button>
+          <Button variant="secondary" onClick={() => navigate("/teachers")}>Cancel</Button>
         }
       />
 
@@ -157,11 +189,15 @@ export default function TeacherBulkPage() {
               className="text-xs px-2.5 py-1 rounded-full border dark:border-blue-500/30 border-blue-200 dark:text-blue-400 text-blue-600 dark:bg-blue-500/10 bg-blue-50"
             >
               {c.label} *
+              {UNIQUE_FIELDS.find((u) => u.key === c.key) && (
+                <span className="ml-1 opacity-70">(unique)</span>
+              )}
             </span>
           ))}
         </div>
         <p className="mt-2 text-xs dark:text-slate-500 text-slate-400">
-          💡 Role must be <code className="text-blue-600 dark:text-blue-400">TEACHER</code> or <code className="text-blue-600 dark:text-blue-400">ADMIN</code>
+          💡 Role must be <code className="text-blue-600 dark:text-blue-400">TEACHER</code> or <code className="text-blue-600 dark:text-blue-400">ADMIN</code> ·
+          Unique fields: <span className="text-blue-600 dark:text-blue-400">Phone, Email</span>
         </p>
       </Card>
 
@@ -172,41 +208,28 @@ export default function TeacherBulkPage() {
             <Upload size={20} className="text-blue-400" />
           </div>
           <div className="text-center">
-            <p className="text-sm font-medium dark:text-slate-200 text-slate-700">
-              Click to upload .xlsx file
-            </p>
-            <p className="text-xs dark:text-slate-500 text-slate-400 mt-0.5">
-              Only Excel files (.xlsx, .xls) accepted
-            </p>
+            <p className="text-sm font-medium dark:text-slate-200 text-slate-700">Click to upload .xlsx file</p>
+            <p className="text-xs dark:text-slate-500 text-slate-400 mt-0.5">Only Excel files (.xlsx, .xls) accepted</p>
           </div>
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".xlsx,.xls"
-            className="hidden"
-            onChange={handleFile}
-          />
+          <input ref={fileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFile} />
         </label>
       </Card>
 
       {rows.length > 0 && (
         <Card className="p-5 mb-4">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-1">
             <SectionHeader
               title="Step 3 — Review & Edit"
               action={
                 <div className="flex items-center gap-2">
                   <Badge color="green">{validRows.length} ready</Badge>
-                  {invalidRows.length > 0 && (
-                    <Badge color="red">{invalidRows.length} errors</Badge>
-                  )}
+                  {invalidRows.length > 0 && <Badge color="red">{invalidRows.length} errors</Badge>}
                 </div>
               }
             />
           </div>
-
           <p className="mb-3 text-xs dark:text-slate-500 text-slate-400">
-            Click any cell to edit. Fix red rows before importing.
+            Click any cell to edit. Red rows have errors or duplicate phone/email.
           </p>
 
           <div className="overflow-x-auto border rounded-xl dark:border-slate-800 border-slate-200">
@@ -217,6 +240,9 @@ export default function TeacherBulkPage() {
                   {COLUMNS.map((c) => (
                     <th key={c.key} className="px-3 py-2.5 text-left text-xs font-semibold dark:text-slate-400 text-slate-500">
                       {c.label} *
+                      {UNIQUE_FIELDS.find((u) => u.key === c.key) && (
+                        <span className="ml-1 text-xs font-normal text-blue-400">(unique)</span>
+                      )}
                     </th>
                   ))}
                   <th className="px-3 py-2.5 text-left text-xs font-semibold dark:text-slate-400 text-slate-500 w-16">Status</th>
@@ -225,43 +251,37 @@ export default function TeacherBulkPage() {
               </thead>
               <tbody>
                 {rows.map((row, rowIdx) => {
-                  const errs   = validateRow(row)
+                  const errs   = getRowErrors(row, rowIdx)
                   const hasErr = errs.length > 0
                   return (
                     <>
                       <tr
                         key={row._id}
-                        className={`
-                          border-b dark:border-slate-800/60 border-slate-100
-                          ${hasErr ? "dark:bg-red-500/5 bg-red-50" : "dark:bg-slate-900 bg-white"}
-                        `}
+                        className={`border-b dark:border-slate-800/60 border-slate-100 ${hasErr ? "dark:bg-red-500/5 bg-red-50" : "dark:bg-slate-900 bg-white"}`}
                       >
                         <td className="px-3 py-2 text-xs dark:text-slate-500 text-slate-400">{rowIdx + 1}</td>
-                        {COLUMNS.map((c) => (
-                          <td key={c.key} className="px-2 py-1.5">
-                            <EditableCell
-                              value={row[c.key]}
-                              onChange={(val) => updateCell(rowIdx, c.key, val)}
-                              hasError={!row[c.key]?.trim()}
-                            />
-                          </td>
-                        ))}
+                        {COLUMNS.map((c) => {
+                          const isDup     = (dupMap[rowIdx] || []).some((e) => e.toLowerCase().includes(c.label.toLowerCase()))
+                          const isMissing = !row[c.key]?.trim()
+                          return (
+                            <td key={c.key} className="px-2 py-1.5">
+                              <EditableCell
+                                value={row[c.key]}
+                                onChange={(val) => updateCell(rowIdx, c.key, val)}
+                                hasError={isMissing || isDup}
+                              />
+                            </td>
+                          )
+                        })}
                         <td className="px-3 py-2">
                           {hasErr ? (
-                            <span className="inline-flex items-center gap-1 text-xs text-red-400">
-                              <X size={11} /> Error
-                            </span>
+                            <span className="inline-flex items-center gap-1 text-xs text-red-400"><X size={11} /> Error</span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-xs text-emerald-400">
-                              <Check size={11} /> Ready
-                            </span>
+                            <span className="inline-flex items-center gap-1 text-xs text-emerald-400"><Check size={11} /> Ready</span>
                           )}
                         </td>
                         <td className="px-2 py-1.5">
-                          <button
-                            onClick={() => deleteRow(rowIdx)}
-                            className="p-1.5 rounded-lg dark:text-slate-500 text-slate-400 hover:text-red-400 hover:bg-red-400/10 transition-all"
-                          >
+                          <button onClick={() => deleteRow(rowIdx)} className="p-1.5 rounded-lg dark:text-slate-500 text-slate-400 hover:text-red-400 hover:bg-red-400/10 transition-all">
                             <Trash2 size={13} />
                           </button>
                         </td>
@@ -294,10 +314,7 @@ export default function TeacherBulkPage() {
           </button>
 
           <div className="flex items-center justify-between mt-5">
-            <button
-              onClick={() => { setRows([]); setDone(false) }}
-              className="text-xs transition-all dark:text-slate-500 text-slate-400 hover:text-red-400"
-            >
+            <button onClick={() => { setRows([]); setDone(false) }} className="text-xs transition-all dark:text-slate-500 text-slate-400 hover:text-red-400">
               Clear all
             </button>
             <div className="flex items-center gap-3">
@@ -306,11 +323,7 @@ export default function TeacherBulkPage() {
                   <Check size={14} /> {validRows.length} teachers imported!
                 </span>
               )}
-              <Button
-                onClick={handleUpload}
-                loading={loading}
-                disabled={validRows.length === 0}
-              >
+              <Button onClick={handleUpload} loading={loading} disabled={validRows.length === 0}>
                 Import {validRows.length} Teachers
               </Button>
             </div>
