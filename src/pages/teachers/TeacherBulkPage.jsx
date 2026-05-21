@@ -163,7 +163,7 @@ export default function TeacherBulkPage() {
   }
 
   return (
-    <div className="max-w-4xl">
+    <div>
       <PageHeader
         title="Bulk Upload Teachers"
         subtitle="Download the template, fill it in Excel, then upload"

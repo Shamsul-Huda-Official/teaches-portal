@@ -181,7 +181,7 @@ export default function StudentBulkPage() {
   }
 
   return (
-    <div className="max-w-5xl">
+    <div>
       <PageHeader
         title="Bulk Upload Students"
         subtitle="Select class and division, then download template, fill and upload"

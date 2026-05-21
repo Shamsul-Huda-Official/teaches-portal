@@ -4,7 +4,6 @@ import { ArrowLeft } from "lucide-react"
 import { Button, Select, Card, Avatar } from "../../components/ui"
 import { DAYS_OF_WEEK } from "../../constants"
 
-// ─── MOCK DATA ────────────────────────────────────────────────────────────────
 const MOCK_CLASS    = { name: "Grade 9" }
 const MOCK_DIVISION = { name: "A" }
 const MOCK_TEACHER  = { name: "Unais Hudawi", profileImageUrl: null }
@@ -36,7 +35,6 @@ const MOCK_TEACHERS = [
   { value: "5", label: "Meera Pillai"  },
 ]
 
-// group periods by day
 function groupByDay(periods) {
   return periods.reduce((acc, p) => {
     const day = p.dayOfWeek
@@ -67,7 +65,6 @@ export default function PeriodAssignPage() {
 
   const handleSave = () => {
     setLoading(true)
-    // TODO: API call — send assignments to backend
     console.log("Save assignments:", assignments)
     setTimeout(() => {
       setLoading(false)
@@ -78,18 +75,16 @@ export default function PeriodAssignPage() {
   const grouped = groupByDay(MOCK_PERIODS)
 
   return (
-    <div className="max-w-2xl">
+    <div>
 
-      {/* Back */}
       <button
         onClick={() => navigate("/periods")}
-        className="flex items-center gap-2 text-sm dark:text-slate-400 text-slate-500 dark:hover:text-slate-200 hover:text-slate-700 mb-5 transition-all"
+        className="flex items-center gap-2 mb-5 text-sm transition-all dark:text-slate-400 text-slate-500 dark:hover:text-slate-200 hover:text-slate-700"
       >
         <ArrowLeft size={15} /> Back to Periods
       </button>
 
-      {/* Header card */}
-      <Card className="px-5 py-4 mb-5 flex items-center justify-between">
+      <Card className="flex items-center justify-between px-5 py-4 mb-5">
         <div className="flex items-center gap-6">
           <div>
             <p className="text-xs dark:text-slate-500 text-slate-400">Class</p>
@@ -107,18 +102,16 @@ export default function PeriodAssignPage() {
         </div>
         <div className="flex items-center gap-2">
           <Avatar name={MOCK_TEACHER.name} src={MOCK_TEACHER.profileImageUrl} size="sm" />
-          <span className="text-sm font-medium dark:text-slate-200 text-slate-700 hidden sm:block">
+          <span className="hidden text-sm font-medium dark:text-slate-200 text-slate-700 sm:block">
             {MOCK_TEACHER.name}
           </span>
         </div>
       </Card>
 
-      {/* Periods grouped by day */}
       <div className="flex flex-col gap-6">
         {Object.entries(grouped).map(([day, periods]) => (
           <div key={day}>
-            {/* Day label */}
-            <p className="text-xs font-semibold dark:text-slate-400 text-slate-500 uppercase tracking-wider mb-3">
+            <p className="mb-3 text-xs font-semibold tracking-wider uppercase dark:text-slate-400 text-slate-500">
               {DAYS_OF_WEEK.find((d) => d.value === Number(day))?.label}
             </p>
 
@@ -128,15 +121,13 @@ export default function PeriodAssignPage() {
                   key={period.id}
                   className="flex items-center gap-4 px-4 py-3"
                 >
-                  {/* Period number */}
-                  <div className="w-8 h-8 rounded-lg dark:bg-slate-800 bg-slate-100 flex items-center justify-center flex-shrink-0">
+                  <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 rounded-lg dark:bg-slate-800 bg-slate-100">
                     <span className="text-xs font-bold dark:text-slate-400 text-slate-500">
                       {i + 1}
                     </span>
                   </div>
 
-                  {/* Period name + length */}
-                  <div className="w-20 flex-shrink-0">
+                  <div className="flex-shrink-0 w-20">
                     <p className="text-sm font-medium dark:text-slate-100 text-slate-800">
                       {period.name}
                     </p>
@@ -145,19 +136,11 @@ export default function PeriodAssignPage() {
                     </p>
                   </div>
 
-                  {/* Subject dropdown */}
                   <div className="flex-1">
                     <select
                       value={assignments[period.id]?.subjectId || ""}
                       onChange={(e) => setField(period.id, "subjectId", e.target.value)}
-                      className="
-                        w-full px-3 py-2 rounded-xl text-sm transition-all
-                        dark:bg-slate-800 bg-slate-50
-                        dark:border-slate-700 border-slate-200 border
-                        dark:text-slate-100 text-slate-800
-                        focus:outline-none focus:ring-2
-                        dark:focus:ring-blue-500/30 focus:ring-blue-500/20
-                      "
+                      className="w-full px-3 py-2 text-sm transition-all border rounded-xl dark:bg-slate-800 bg-slate-50 dark:border-slate-700 border-slate-200 dark:text-slate-100 text-slate-800 focus:outline-none focus:ring-2 dark:focus:ring-blue-500/30 focus:ring-blue-500/20"
                     >
                       <option value="">— Select Subject —</option>
                       {MOCK_SUBJECTS.map((s) => (
@@ -168,19 +151,11 @@ export default function PeriodAssignPage() {
                     </select>
                   </div>
 
-                  {/* Teacher dropdown */}
                   <div className="flex-1 hidden sm:block">
                     <select
                       value={assignments[period.id]?.teacherId || ""}
                       onChange={(e) => setField(period.id, "teacherId", e.target.value)}
-                      className="
-                        w-full px-3 py-2 rounded-xl text-sm transition-all
-                        dark:bg-slate-800 bg-slate-50
-                        dark:border-slate-700 border-slate-200 border
-                        dark:text-slate-100 text-slate-800
-                        focus:outline-none focus:ring-2
-                        dark:focus:ring-blue-500/30 focus:ring-blue-500/20
-                      "
+                      className="w-full px-3 py-2 text-sm transition-all border rounded-xl dark:bg-slate-800 bg-slate-50 dark:border-slate-700 border-slate-200 dark:text-slate-100 text-slate-800 focus:outline-none focus:ring-2 dark:focus:ring-blue-500/30 focus:ring-blue-500/20"
                     >
                       <option value="">— Select Teacher —</option>
                       {MOCK_TEACHERS.map((t) => (
@@ -197,7 +172,6 @@ export default function PeriodAssignPage() {
         ))}
       </div>
 
-      {/* Save */}
       <div className="flex justify-end mt-6">
         <Button onClick={handleSave} loading={loading} size="lg">
           Save & Assign

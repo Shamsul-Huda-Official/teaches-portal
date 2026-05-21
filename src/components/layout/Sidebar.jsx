@@ -72,14 +72,14 @@ const NAV_ITEMS = [
       { label: "Assign Period", to: "/periods/:id/assign"}
     ],
   },
-  {
-    label: "Donation",
-    icon: HandCoins,
-    children: [
-      { label: "All Donations", to: "/donation" },
-      { label: "Add Donation",  to: "/donation/create" },
-    ],
-  },
+  // {
+  //   label: "Donation",
+  //   icon: HandCoins,
+  //   children: [
+  //     { label: "All Donations", to: "/donation" },
+  //     { label: "Add Donation",  to: "/donation/create" },
+  //   ],
+  // },
 ]
 
 function NavItem({ item, onNavigate }) {
@@ -168,16 +168,16 @@ export default function Sidebar({ open, onClose }) {
       }>
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/6">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/30">
+            <div className="flex items-center justify-center w-8 h-8 bg-blue-600 shadow-lg rounded-xl shadow-blue-600/30">
               <Building2 size={15} className="text-white" />
             </div>
-            <span  className="font-bold text-white text-base tracking-tight">Attendance SaaS </span>
+            <span  className="text-base font-bold tracking-tight text-white">Attendance SaaS </span>
           </div>
           <button
             onClick={onClose}
             className="md:hidden p-1.5 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-white/10 transition-all"
           >
-            <X size={15} className="text-white font-bold" />
+            <X size={15} className="font-bold text-white" />
           </button>
         </div>
        
@@ -187,16 +187,16 @@ export default function Sidebar({ open, onClose }) {
           ))}
         </nav>
 
-        <div className="border-t border-white/6 px-6 py-6">
+        <div className="px-6 py-6 border-t border-white/6">
           <div className="flex items-center gap-3 px-2">
-            <div className="w-8 h-8 rounded-full bg-blue-600/15 border border-blue-500/20 flex items-center justify-center text-xs font-bold text-blue-400 flex-shrink-0">
+            <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 text-xs font-bold text-blue-400 border rounded-full bg-blue-600/15 border-blue-500/20">
               {getInitials(user?.name || "U")}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-slate-200 truncate">
+              <p className="text-xs font-semibold truncate text-slate-200">
                 {user?.name || "Admin"}
               </p>
-              <p className="text-xs text-slate-500 truncate">
+              <p className="text-xs truncate text-slate-500">
                 {user?.role || "admin"}
               </p>
             </div>

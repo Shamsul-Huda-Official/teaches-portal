@@ -90,7 +90,7 @@ function PeriodAttendance({ period, students, attendance, onStatusChange }) {
         </button>
 
         {open && (
-          <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-slate-800 border dark:border-slate-700 border-slate-200 rounded-md shadow-sm z-50">
+          <div className="absolute right-0 z-50 mt-2 bg-white border rounded-md shadow-sm w-44 dark:bg-slate-800 dark:border-slate-700 border-slate-200">
             {Object.entries(STATUS_CONFIG).map(([s, c]) => {
               const textClass = (c.color || "").split(" ").find(t => t.startsWith("text-"))
                 || (c.activeColor || "").split(" ").find(t => t.startsWith("text-"))
@@ -101,7 +101,7 @@ function PeriodAttendance({ period, students, attendance, onStatusChange }) {
                   key={s}
                   type="button"
                   onMouseDown={(e) => { e.preventDefault(); onChange(s); setOpen(false) }}
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"
+                  className="flex items-center w-full gap-2 px-3 py-2 text-sm text-left hover:bg-slate-100 dark:hover:bg-slate-700"
                 >
                   <span className={`${textClass} font-bold`}>{s.charAt(0) + s.slice(1).toLowerCase()}</span>
                 </button>
@@ -124,10 +124,10 @@ function PeriodAttendance({ period, students, attendance, onStatusChange }) {
     <Card className="overflow-visible">
       <button
         onClick={() => setCollapsed((p) => !p)}
-        className="w-full flex items-center justify-between px-4 py-3 dark:hover:bg-slate-800/50 hover:bg-slate-50 transition-all"
+        className="flex items-center justify-between w-full px-4 py-3 transition-all dark:hover:bg-slate-800/50 hover:bg-slate-50"
       >
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+          <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 rounded-lg bg-blue-500/10">
             <Clock size={14} className="text-blue-400" />
           </div>
           <div className="text-left">
@@ -341,7 +341,7 @@ export default function AttendanceMarkPage() {
   }, 0)
 
   return (
-    <div className="max-w-3xl">
+    <div>
       <PageHeader title="Mark Attendance" />
 
       <Card className="p-4 mb-5">
@@ -396,21 +396,21 @@ export default function AttendanceMarkPage() {
 
       {!classId && (
         <div className="flex flex-col items-center justify-center py-20">
-          <div className="w-14 h-14 rounded-2xl dark:bg-slate-800 bg-slate-100 flex items-center justify-center mb-4">
+          <div className="flex items-center justify-center mb-4 w-14 h-14 rounded-2xl dark:bg-slate-800 bg-slate-100">
             <span className="text-2xl">🏫</span>
           </div>
-          <p className="dark:text-slate-300 text-slate-600 font-medium text-sm">Select a Class</p>
-          <p className="dark:text-slate-500 text-slate-400 text-xs mt-1">Choose a class to continue</p>
+          <p className="text-sm font-medium dark:text-slate-300 text-slate-600">Select a Class</p>
+          <p className="mt-1 text-xs dark:text-slate-500 text-slate-400">Choose a class to continue</p>
         </div>
       )}
 
       {classId && !divisionId && (
         <div className="flex flex-col items-center justify-center py-20">
-          <div className="w-14 h-14 rounded-2xl dark:bg-slate-800 bg-slate-100 flex items-center justify-center mb-4">
+          <div className="flex items-center justify-center mb-4 w-14 h-14 rounded-2xl dark:bg-slate-800 bg-slate-100">
             <span className="text-2xl">📋</span>
           </div>
-          <p className="dark:text-slate-300 text-slate-600 font-medium text-sm">Select a Division</p>
-          <p className="dark:text-slate-500 text-slate-400 text-xs mt-1">Choose a division to mark attendance</p>
+          <p className="text-sm font-medium dark:text-slate-300 text-slate-600">Select a Division</p>
+          <p className="mt-1 text-xs dark:text-slate-500 text-slate-400">Choose a division to mark attendance</p>
         </div>
       )}
 
@@ -438,9 +438,9 @@ export default function AttendanceMarkPage() {
             <div className="flex flex-col gap-3">
               {periods.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12">
-                  <span className="text-2xl mb-3">📭</span>
-                  <p className="dark:text-slate-300 text-slate-600 text-sm font-medium">No periods found</p>
-                  <p className="dark:text-slate-500 text-slate-400 text-xs mt-1">Add periods for this class division first</p>
+                  <span className="mb-3 text-2xl">📭</span>
+                  <p className="text-sm font-medium dark:text-slate-300 text-slate-600">No periods found</p>
+                  <p className="mt-1 text-xs dark:text-slate-500 text-slate-400">Add periods for this class division first</p>
                 </div>
               ) : (
                 filteredPeriods.map((period) => (
@@ -466,7 +466,7 @@ export default function AttendanceMarkPage() {
           )}
 
           {students.length > 0 && (
-            <div className="flex justify-end mt-5 gap-3">
+            <div className="flex justify-end gap-3 mt-5">
               <Button
                 variant="secondary"
                 onClick={markAllPresent}
