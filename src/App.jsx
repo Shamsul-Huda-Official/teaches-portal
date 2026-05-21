@@ -6,7 +6,6 @@ import ProtectedRoute from './components/shared/ProtectedRoute';
 import PublicRoute from "./components/shared/PublicRoute"
 import DashboardLayout from "./components/layout/DashboardLayout"
 
-import UITestPage from "./pages/test/UITestPage"
 
 import LoginPage from "./pages/auth/LoginPage"
 import DashboardPage from "./pages/dashboard/DashboardPage"
@@ -72,7 +71,6 @@ export default function App() {
           </Route>
         {/* </Route> */}
 
-        <Route path="/ui-test" element={<UITestPage />} />
         
         <Route path="/"   element={<Navigate to="/dashboard" replace />} />
         <Route path="*"   element={<Navigate to="/dashboard" replace />} />
