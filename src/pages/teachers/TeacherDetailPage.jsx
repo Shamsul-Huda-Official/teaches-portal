@@ -1,37 +1,24 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { ArrowLeft, Camera, Pencil, Check, X } from "lucide-react"
 import {
-  Button, Card, Badge, Tabs, Avatar, SectionHeader, Table
+  Card, Badge, Tabs, Avatar, Table,
+  PageLoader
 } from "../../components/ui"
 
-const MOCK_TEACHER = {
-  id:             "1",
-  name:           "Unais Hudawi",
-  phone:          "8606548617",
-  email:          "unaisuser@gmail.com",
-  role:           "Principal",
-  profileImageUrl: null,
-  isActive:       true,
-  isClassTeacher: true,
-  className:      "Grade 9",
-  divisionName:   "A",
-}
-
-const MOCK_STUDENTS = [
-  { id: "1", name: "Mohammed Ajmal", admissionNumber: "ADM001", rollNumber: "01", phone: "9745804605", isActive: true  },
-  { id: "2", name: "Sara Mathew",    admissionNumber: "ADM002", rollNumber: "02", phone: "9123456780", isActive: true  },
-  { id: "3", name: "Riya Nair",      admissionNumber: "ADM003", rollNumber: "03", phone: "9000011112", isActive: false },
-  { id: "4", name: "Anoop P",        admissionNumber: "ADM004", rollNumber: "04", phone: "9888877776", isActive: true  },
-  { id: "5", name: "Fatima Zahra",   admissionNumber: "ADM005", rollNumber: "05", phone: "9777766665", isActive: true  },
-]
+import toast from "react-hot-toast"
+import { getTeacherById, updateTeacher } from "../../services/api/teacher.service"
 
 function EditableField({ label, value, onSave }) {
   const [editing,  setEditing]  = useState(false)
   const [draft,    setDraft]    = useState(value)
+  
+  useEffect(() => {
+    setDraft(value || "")
+  }, [value])
 
-  const handleSave = () => {
-    onSave(draft)
+  const handleSave = async () => {
+    await onSave(draft)
     setEditing(false)
   }
 
@@ -71,7 +58,7 @@ function EditableField({ label, value, onSave }) {
 
       {!editing ? (
         <p className="text-sm font-medium dark:text-slate-100 text-slate-800">
-          {value}
+          {value || "-"}
         </p>
       ) : (
         <input
@@ -162,13 +149,51 @@ function StudentsTab({ teacher, students }) {
 export default function TeacherDetailPage() {
   const { id }    = useParams()
   const navigate  = useNavigate()
-  const [tab, setTab] = useState("profile")
+  const [tab, setTab] = useState("students")
 
-  const [teacher, setTeacher] = useState(MOCK_TEACHER)
+  const [teacher, setTeacher] = useState(null)
+  const [students, setStudents] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  const updateField = (key) => (val) => {
-    setTeacher((p) => ({ ...p, [key]: val }))
-    console.log("Update teacher field:", key, val)
+  useEffect(() => {
+    fetchTeacher();
+  }, [id])
+  
+  const fetchTeacher = async () => {
+    try {
+      setLoading(true)
+      const data = await getTeacherById(id)
+      setTeacher(data)
+      setStudents(data.students || []);
+    } catch (err) {
+      toast.error(
+        err?.response?.data?.message || "Failed to fetch teacher"
+      )
+    } finally {
+      setLoading(false)
+    }
+  }
+  
+  const updateField = (key) => async (val) => {
+    try {
+      await updateTeacher(id, {
+        [key]: val,
+      });
+      
+      setTeacher((prev) => ({
+        ...prev,
+        [key]: val,
+      }))
+      toast.success("Teacher updated")
+    } catch (err) {
+      toast.error(
+        err?.response?.data?.message || "Updating teachers fields failed"
+      )
+    } 
+  }
+  
+  if(loading || !teacher) {
+    return <PageLoader text="Teacher Detail Loading..." />
   }
 
   return (
@@ -200,7 +225,7 @@ export default function TeacherDetailPage() {
               {teacher.name}
             </p>
             <p className="text-xs dark:text-slate-400 text-slate-500 mt-0.5">
-              {teacher.role}
+              {teacher.user?.role}
             </p>
           </div>
 
@@ -217,8 +242,7 @@ export default function TeacherDetailPage() {
           />
           <EditableField
             label="Role"
-            value={teacher.role}
-            onSave={updateField("role")}
+            value={teacher.user?.role}
           />
           <EditableField
             label="Phone"
@@ -244,7 +268,7 @@ export default function TeacherDetailPage() {
       </div>
 
       {tab === "students" && (
-        <StudentsTab teacher={teacher} students={MOCK_STUDENTS} />
+        <StudentsTab teacher={teacher} students={students} />
       )}
     </div>
   )
