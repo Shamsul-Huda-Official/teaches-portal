@@ -233,6 +233,7 @@ export default function TeacherDetailPage() {
             {teacher.isActive ? "Active" : "Inactive"}
           </Badge>
         </div>
+        
 
         <div className="grid grid-cols-2 gap-3">
           <EditableField
