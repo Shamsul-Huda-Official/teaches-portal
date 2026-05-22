@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { Upload, Download, Trash2, Plus, Check, X, AlertCircle } from "lucide-react"
 import * as XLSX from "xlsx"
 import { Button, Card, PageHeader, Badge, SectionHeader } from "../../components/ui"
+import { bulkCreateTeachers } from "../../services/api/teacher.service"
 
 const COLUMNS = [
   { key: "name",     label: "Full Name", required: true  },
@@ -93,6 +94,7 @@ export default function TeacherBulkPage() {
   const [rows,    setRows]    = useState([])
   const [loading, setLoading] = useState(false)
   const [done,    setDone]    = useState(false)
+  const [importedCount, setImportedCount] = useState(0)
 
   const dupMap = findDuplicates(rows)
 
@@ -153,7 +155,12 @@ export default function TeacherBulkPage() {
     if (validRows.length === 0) return
     setLoading(true)
     try {
-      await new Promise((r) => setTimeout(r, 1000))
+      const payload = validRows.map(({ _id, ...rest }) => ({ ...rest }))
+      const res = await bulkCreateTeachers(payload)
+      const count = Array.isArray(res) ? res.length : payload.length
+      setImportedCount(count)
+      // keep only invalid rows visible after import
+      setRows(invalidRows)
       setDone(true)
     } catch (err) {
       console.error(err)
@@ -320,7 +327,7 @@ export default function TeacherBulkPage() {
             <div className="flex items-center gap-3">
               {done && (
                 <span className="flex items-center gap-1.5 text-sm text-emerald-400 font-medium">
-                  <Check size={14} /> {validRows.length} teachers imported!
+                  <Check size={14} /> {importedCount} teachers imported!
                 </span>
               )}
               <Button onClick={handleUpload} loading={loading} disabled={validRows.length === 0}>

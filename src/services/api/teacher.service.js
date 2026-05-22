@@ -19,3 +19,11 @@ export const updateTeacher = async (id, data) => {
     const response = await api.put(`/teachers/${id}`, data);
     return response.data.data;
 }
+
+export const bulkCreateTeachers = async (teachers) => {
+    const response = await api.post(
+        "/teachers/bulk",
+        { teachers }
+    );
+    return response.data.data;
+}
