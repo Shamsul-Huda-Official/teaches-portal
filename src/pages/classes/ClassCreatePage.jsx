@@ -2,6 +2,8 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { Plus, Trash2 } from "lucide-react"
 import { Button, Input, Card, PageHeader, SectionHeader } from "../../components/ui"
+import toast from "react-hot-toast"
+import { createClass } from "../../services/api/class.service"
 
 const INIT = { name: "" }
 
@@ -20,14 +22,26 @@ export default function ClassCreatePage() {
     return Object.keys(e).length === 0
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (!validate()) return
     setLoading(true)
-    setTimeout(() => {
-      setLoading(false)
+
+    try {
+      await createClass({
+        name: form.name,
+        divisions: divisions.map((division) => ({
+          name: division.name,
+          classTeacherId: division.classTeacherId,
+        })),
+      })
+      toast.success("Class created")
       navigate("/classes")
-    }, 800)
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to create class")
+    } finally {
+      setLoading(false)
+    }
   }
 
   const addDivision    = () => setDivisions((p) => [...p, { name: "" }])
