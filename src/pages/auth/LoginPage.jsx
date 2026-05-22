@@ -5,6 +5,7 @@ import { useAuth } from "../../store/AuthContext"
 import { Button, Input } from "../../components/ui"
 import toast from "react-hot-toast"
 
+import api from "../../services/api"
 import { loginUser } from "../../services/auth.service"
 
 const INIT = { username: "", password: "" }
@@ -32,15 +33,14 @@ export default function LoginPage() {
     if (!validate()) return
     setLoading(true)
     try {
-      const response = await loginUser({
+      const response = await api.post("/auth/login", {
         username: form.username,
         password: form.password
       });
-      console.log(response)
-      login(
-        response.data.user,
-        response.data.token
-      );
+      const {token, user} = response.data.data;
+      
+      login(user, token);
+      
       toast.success("Login successful")
       navigate("/dashboard")
     } catch (err) {
