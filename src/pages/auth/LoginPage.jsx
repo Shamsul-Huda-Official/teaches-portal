@@ -5,6 +5,8 @@ import { useAuth } from "../../store/AuthContext"
 import { Button, Input } from "../../components/ui"
 import toast from "react-hot-toast"
 
+import { loginUser } from "../../services/auth.service"
+
 const INIT = { username: "", password: "" }
 
 export default function LoginPage() {
@@ -30,11 +32,16 @@ export default function LoginPage() {
     if (!validate()) return
     setLoading(true)
     try {
-      await new Promise((r) => setTimeout(r, 800))
+      const response = await loginUser({
+        username: form.username,
+        password: form.password
+      });
+      console.log(response)
       login(
-        { name: "Admin", role: "ADMIN", institutionId: "inst-1" },
-        "mock-token-123"
-      )
+        response.data.user,
+        response.data.token
+      );
+      toast.success("Login successful")
       navigate("/dashboard")
     } catch (err) {
       toast.error(err?.response?.data?.message || "Login failed")

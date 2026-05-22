@@ -43,7 +43,7 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
         </Route>
 
-         {/* <Route element={<ProtectedRoute />}> */}
+         <Route element={<ProtectedRoute />}>
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard"                         element={<DashboardPage />} />
             <Route path="/teachers"                          element={<TeachersListPage />} />
@@ -69,7 +69,7 @@ export default function App() {
             <Route path="/donation"                          element={<DonationListPage />} />
             <Route path="/donation/create"                   element={<DonationCreatePage />} />
           </Route>
-        {/* </Route> */}
+        </Route>
 
         
         <Route path="/"   element={<Navigate to="/dashboard" replace />} />
