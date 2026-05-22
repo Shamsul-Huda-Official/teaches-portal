@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom"
 import { Camera } from "lucide-react"
 import { Button, Input, Select, Card, PageHeader } from "../../components/ui"
 
+import toast from "react-hot-toast"
+import { createTeacher } from "../../services/api/teacher.service"
+
 const ROLE_OPTIONS = [
   { value: "TEACHER", label: "Teacher" },
   { value: "ADMIN",   label: "Admin"   },
@@ -45,14 +48,30 @@ export default function TeacherCreatePage() {
     setPreview(URL.createObjectURL(file))
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (!validate()) return
-    setLoading(true)
-    setTimeout(() => {
-      setLoading(false)
+    try {
+      setLoading(true)
+      
+      const payLoad = {
+        name: form.name,
+        phone: form.phone,
+        email: form.email,
+        password: form.password,
+        role: form.role.toLowerCase(),
+      };
+      
+      await createTeacher(payLoad)
+      toast.success("Teacher created successfully")
       navigate("/teachers")
-    }, 800)
+    } catch (err) {
+      toast.error (
+        err?.response?.data?.message || "Failed to create teacher"
+      )
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -67,25 +86,18 @@ export default function TeacherCreatePage() {
           {/* Profile image */}
           <div className="flex flex-col items-center gap-2">
             <div className="relative">
-              <div className="w-20 h-20 rounded-full overflow-hidden dark:bg-slate-800 bg-slate-100 border-2 dark:border-slate-700 border-slate-200 flex items-center justify-center">
+              <div className="flex items-center justify-center w-20 h-20 overflow-hidden border-2 rounded-full dark:bg-slate-800 bg-slate-100 dark:border-slate-700 border-slate-200">
                 {preview ? (
                   <img
                     src={preview}
                     alt="preview"
-                    className="w-full h-full object-cover"
+                    className="object-cover w-full h-full"
                   />
                 ) : (
                   <span className="text-2xl dark:text-slate-600 text-slate-300">👤</span>
                 )}
               </div>
-              <label className="
-                absolute bottom-0 right-0
-                w-7 h-7 rounded-full
-                bg-blue-600 text-white
-                flex items-center justify-center
-                shadow-lg hover:bg-blue-500
-                transition-all cursor-pointer
-              ">
+              <label className="absolute bottom-0 right-0 flex items-center justify-center text-white transition-all bg-blue-600 rounded-full shadow-lg cursor-pointer w-7 h-7 hover:bg-blue-500">
                 <Camera size={13} />
                 <input
                   type="file"

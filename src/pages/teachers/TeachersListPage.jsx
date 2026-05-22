@@ -102,7 +102,7 @@ export default function TeachersListPage() {
                         <Button
                             onClick={() => navigate("/teachers/create")}
                         >
-                            <Plus size={14} /> <span className="hidden sm:inline">Add Student</span>
+                            <Plus size={14} /> <span className="hidden sm:inline">Add Teacher</span>
                         </Button>
                     </div>
                 } 
