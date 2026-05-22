@@ -5,8 +5,8 @@ import { useAuth } from "../../store/AuthContext"
 import { Button, Input } from "../../components/ui"
 import toast from "react-hot-toast"
 
-import api from "../../services/api"
-import { loginUser } from "../../services/auth.service"
+import api from "../../services/api/api"
+import { loginUser } from "../../services/api/auth.service"
 
 const INIT = { username: "", password: "" }
 

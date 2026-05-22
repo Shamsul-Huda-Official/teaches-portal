@@ -1,29 +1,46 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { Plus, Upload } from "lucide-react"
 import {
     Button, PageHeader, EmptyState, PageLoader, Pagination, SearchInput, Table, Badge, Avatar
 } from "../../components/ui"
 
-const MOCK_TEACHERS = [
-  { id: "1", name: "Unais Hudawi",    phone: "9876543210", email: "unais@mail.com",   isActive: true  },
-  { id: "2", name: "Sara Mathew",     phone: "9123456780", email: "sara@mail.com",    isActive: true  },
-  { id: "3", name: "Riya Nair",       phone: "9000011112", email: "riya@mail.com",    isActive: false },
-  { id: "4", name: "Ahmed Khan",      phone: "9888877776", email: "ahmed@mail.com",   isActive: true  },
-  { id: "5", name: "Fatima Zahra",    phone: "9777766665", email: "fatima@mail.com",  isActive: true  },
-  { id: "6", name: "Anoop Krishnan",  phone: "9666655554", email: "anoop@mail.com",   isActive: true  },
-  { id: "7", name: "Meera Pillai",    phone: "9555544443", email: "meera@mail.com",   isActive: false },
-  { id: "8", name: "Rahul Sharma",    phone: "9444433332", email: "rahul@mail.com",   isActive: true  },
-]
+import { getTeachers } from "../../services/api/teacher.service"
+import toast from "react-hot-toast"
 
-const PAGE_SIZE = 6;
+const PAGE_SIZE = 10;
 
 export default function TeachersListPage() {
     const navigate = useNavigate()
+    const [teachers, setTeachers] = useState([])
     const [query, setQuery] = useState("")
     const [page, setPage] = useState(1)
+    const [loading, setLoading] = useState(true)
+    
+    useEffect(() => {
+        fetchTeachers()
+    }, [])
+    
+    const fetchTeachers = async () => {
+        try {
+            setLoading(true)
+            const data = await getTeachers()
+            
+            setTeachers(data)
+            
+            setLoading(false)
+        }
+        catch(err) {
+            toast.error(
+                err?.response?.data?.message || 'Failed to fetch teachers'
+            )
+        } finally {
+            setLoading(false)
+        }
+    }
+    
 
-    const filtered = MOCK_TEACHERS.filter((t) => 
+    const filtered = teachers.filter((t) => 
         t.name.toLowerCase().includes(query.toLowerCase()) ||
         t.phone.includes(query) || 
         t.email.toLowerCase().includes(query.toLowerCase())
@@ -64,11 +81,16 @@ export default function TeachersListPage() {
             ),
         },
     ]
+    
+    if(loading) {
+        return <PageLoader text="Loading Teachers..." />
+    }
+    
     return (
         <div>
             <PageHeader
                 title="Teachers"
-                subtitle={`${MOCK_TEACHERS.length} total`}
+                subtitle={`${teachers.length} total`}
                 actions={
                     <div className="flex flex-wrap justify-end gap-2">
                         <Button
