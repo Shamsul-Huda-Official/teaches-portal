@@ -1,20 +1,11 @@
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { Upload, Download, Trash2, Plus, Check, X, AlertCircle } from "lucide-react"
 import * as XLSX from "xlsx"
+import toast from "react-hot-toast"
 import { Button, Card, PageHeader, Badge, SectionHeader, Select } from "../../components/ui"
-
-const MOCK_CLASSES = [
-  { value: "1", label: "Grade 9"  },
-  { value: "2", label: "Grade 10" },
-  { value: "3", label: "Grade 11" },
-]
-
-const MOCK_DIVISIONS = {
-  "1": [{ value: "a", label: "A" }, { value: "b", label: "B" }],
-  "2": [{ value: "a", label: "A" }, { value: "b", label: "B" }, { value: "c", label: "C" }],
-  "3": [{ value: "a", label: "A" }],
-}
+import { bulkCreateStudent } from "../../services/api/student.service"
+import { getClasses } from "../../services/api/class.service"
 
 const COLUMNS = [
   { key: "name",            label: "Full Name",     required: true  },
@@ -74,7 +65,7 @@ function validateRow(row) {
 
 function downloadTemplate() {
   const headers = COLUMNS.map((c) => c.label)
-  const sample  = ["Mohammed Ajmal", "ADM001", "01", "9876543210", "Ajmal K", "ajmal@mail.com"]
+  const sample  = ["Muhammed Abdul Saleem", "67", "01", "7909137314", "Abdul Saleem", "mhdk7909@mail.com"]
   const ws      = XLSX.utils.aoa_to_sheet([headers, sample])
   ws["!cols"]   = COLUMNS.map(() => ({ wch: 20 }))
   const wb      = XLSX.utils.book_new()
@@ -107,8 +98,33 @@ export default function StudentBulkPage() {
   const [rows,       setRows]       = useState([])
   const [loading,    setLoading]    = useState(false)
   const [done,       setDone]       = useState(false)
+  
+  const [classes, setClasses] = useState([])
+  const [classData, setClassData] = useState(null)
 
-  const divisions = classId ? (MOCK_DIVISIONS[classId] || []) : []
+  // Fetch classes on mount
+  useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        const data = await getClasses()
+        // ensure option values are strings so they match e.target.value
+        setClasses(data.map((c) => ({ value: String(c.id), label: c.name })))
+      } catch (err) {
+        toast.error(err?.response?.data?.message || "Failed to fetch classes")
+      }
+    }
+    fetchClasses()
+  }, [])
+
+  // Get divisions from selected class
+  const divisions = classId && classData?.divisions
+    ? classData.divisions.map((d) => ({
+        // stringify division id as well to match select value type
+        value: String(d.id),
+        label: typeof d.name === 'string' ? d.name : d.name?.toString() || d.id
+      }))
+    : []
+
   const isReady   = classId && divisionId
 
   const dupMap    = findDuplicates(rows)
@@ -167,14 +183,53 @@ export default function StudentBulkPage() {
       { _id: Date.now(), name: "", admissionNumber: "", rollNumber: "", phone: "", parentName: "", email: "" },
     ])
 
+  const handleClassChange = async (e) => {
+    const newClassId = e.target.value
+    setClassId(newClassId)
+    setDivisionId("")
+    setRows([])
+    setDone(false)
+
+    // Fetch class data to get divisions
+    try {
+      const classesData = await getClasses()
+      // find by stringified id to match select value
+      const selected = classesData.find((c) => String(c.id) === newClassId)
+      if (selected) {
+        setClassData(selected)
+      }
+    } catch {
+      toast.error("Failed to load divisions")
+    }
+  }
+
   const handleUpload = async () => {
     if (!isReady || validRows.length === 0) return
     setLoading(true)
+    
     try {
-      await new Promise((r) => setTimeout(r, 1000))
+      const payload = validRows.map((row) => ({
+        name: row.name,
+        admissionNumber: row.admissionNumber,
+        rollNumber: row.rollNumber,
+        phone: row.phone,
+        parentName: row.parentName,
+        email: row.email,
+        classId: classId,
+        divisionId: divisionId,
+      }))
+      
+      await bulkCreateStudent(payload)
+      toast.success(`${validRows.length} students imported successfully`)
       setDone(true)
-    } catch (err) {
-      console.error(err)
+      // Clear after success
+      setTimeout(() => {
+        setRows([])
+        setDone(false)
+        navigate("/students")
+      }, 2000)
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to import students")
     } finally {
       setLoading(false)
     }
@@ -198,9 +253,9 @@ export default function StudentBulkPage() {
         <div className="flex flex-col gap-3 sm:flex-row">
           <Select
             placeholder="— Select Class —"
-            options={MOCK_CLASSES}
+            options={classes}
             value={classId}
-            onChange={(e) => { setClassId(e.target.value); setDivisionId(""); setRows([]); setDone(false) }}
+            onChange={handleClassChange}
           />
           <Select
             placeholder="— Select Division —"
@@ -215,7 +270,7 @@ export default function StudentBulkPage() {
             <Check size={12} />
             Students will be added to{" "}
             <span className="font-semibold">
-              {MOCK_CLASSES.find((c) => c.value === classId)?.label} — Division{" "}
+              {classes.find((c) => c.value === classId)?.label} — Division{" "}
               {divisions.find((d) => d.value === divisionId)?.label}
             </span>
           </p>
@@ -363,7 +418,7 @@ export default function StudentBulkPage() {
                           <td />
                           <td colSpan={COLUMNS.length + 2} className="px-3 pb-2">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <AlertCircle size={11} className="flex-shrink-0 text-red-400" />
+                              <AlertCircle size={11} className="shrink-0 text-red-400" />
                               {errs.map((err) => (
                                 <span key={err} className="text-xs text-red-400">{err}</span>
                               ))}

@@ -1,16 +1,9 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
+import toast from "react-hot-toast"
 import { Button, Input, Select, Card, PageHeader } from "../../components/ui"
-
-const MOCK_CLASSES = [
-    { value: 1, label: "Grade 9" },
-    { value: 2, label: "Grade 10" },
-]
-
-const MOCK_DIVISION = {
-    "1": [{ value: "a", label: "A" }, { value: "b", label: "B" }],
-    "2": [{ value: "a", label: "A" }, { value: "b", label: "B" }]
-}
+import { createStudent } from "../../services/api/student.service"
+import { getClasses } from "../../services/api/class.service"
 
 const INIT = {
     name: "", admissionNumber: "", rollNumber: "",
@@ -22,8 +15,30 @@ export default function StudentCreatePage() {
     const [form, setForm] = useState(INIT);
     const [error, setError] = useState({})
     const [loading, setLoading] = useState(false)
+    
+    const [classes, setClasses] = useState([])
+    const [classData, setClassData] = useState(null)
 
-    const divisions = form.classId ? (MOCK_DIVISION[form.classId] || []) : [];
+    // Fetch classes on mount
+    useEffect(() => {
+        const fetchClasses = async () => {
+            try {
+                const data = await getClasses()
+                setClasses(data.map((c) => ({ value: c.id, label: c.name })))
+            } catch (err) {
+                toast.error(err?.response?.data?.message || "Failed to fetch classes")
+            }
+        }
+        fetchClasses()
+    }, [])
+
+    const divisions = classData?.divisions
+        ? classData.divisions.map((d) => ({ 
+            value: d.id, 
+            label: typeof d.name === 'string' ? d.name : d.name?.toString() || d.id 
+        }))
+        : []
+
     const validate = () => {
         const e = {} 
             if (!form.name.trim()) e.name = "Required"
@@ -39,16 +54,46 @@ export default function StudentCreatePage() {
     }
 
     const set = (key) => (e) => setForm((p) => ({ ...p, [key]: e.target.value }))
-    const setClass = (e) => setForm((p) => ({ ...p, classId: e.target.value, divisionId: ""}))
+    
+    const setClass = async (e) => {
+        const newClassId = e.target.value
+        setForm((p) => ({ ...p, classId: newClassId, divisionId: ""}))
+        
+        // Fetch the class data to get divisions
+        try {
+            const classesData = await getClasses()
+            const selectedClass = classesData.find((c) => c.id === newClassId)
+            if (selectedClass) {
+                setClassData(selectedClass)
+            }
+        } catch {
+            toast.error("Failed to load divisions")
+        }
+    }
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault()
         if (!validate()) return 
         setLoading(true)
-        setTimeout(() => {
-            setLoading(false)
+        
+        try {
+            await createStudent({
+                name: form.name,
+                admissionNumber: form.admissionNumber,
+                rollNumber: form.rollNumber,
+                phone: form.phone,
+                email: form.email,
+                parentName: form.parentName,
+                classId: form.classId,
+                divisionId: form.divisionId,
+            })
+            toast.success("Student created")
             navigate("/students")
-        }, 800) 
+        } catch (err) {
+            toast.error(err?.response?.data?.message || "Failed to create student")
+        } finally {
+            setLoading(false)
+        }
     }
 
     return (
@@ -113,7 +158,7 @@ export default function StudentCreatePage() {
             
                     <Select
                         label="Class"
-                        options={MOCK_CLASSES}
+                        options={classes}
                         value={form.classId}
                         onChange={setClass}
                         error={error.classId}

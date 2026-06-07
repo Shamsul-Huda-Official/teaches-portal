@@ -1,25 +1,14 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { ArrowLeft, Camera, Pencil, Check, X } from "lucide-react"
+import toast from "react-hot-toast"
 import {
   Button, Card, Badge, Tabs, SectionHeader
 } from "../../components/ui"
+import { getStudentById, updateStudent } from "../../services/api/student.service"
+import { getClasses } from "../../services/api/class.service"
 
-// ─── MOCK DATA ────────────────────────────────────────────────────────────────
-const MOCK_STUDENT = {
-  id:              "1",
-  name:            "Mohammed Ajmal",
-  admissionNumber: "ADM001",
-  rollNumber:      "10",
-  phone:           "9745804605",
-  email:           "ajmal@mail.com",
-  parentName:      "Ajmal K",
-  className:       "Grade 9",
-  divisionName:    "A",
-  profileImageUrl: null,
-  isActive:        true,
-}
-
+// ─── MOCK DATA (keeping for UI that doesn't have API integration yet) ───
 const MOCK_ATTENDANCE_STATS = {
   total:         125,
   present:        80,
@@ -68,7 +57,7 @@ function EditableField({ label, value, onSave }) {
               onClick={handleSave}
               className="p-1 transition-all rounded-md text-emerald-400 hover:bg-emerald-400/10"
             >
-              <Check size={11} />
+              <Check size={11} /> 
             </button>
             <button
               onClick={handleCancel}
@@ -161,7 +150,7 @@ function DonutChart({ stats }) {
         {segments.map((s) => (
           <div key={s.label} className="flex items-center gap-2">
             <div
-              className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+              className="w-2.5 h-2.5 rounded-full shrink-0"
               style={{ background: s.color }}
             />
             <span className="flex-1 text-xs truncate dark:text-slate-400 text-slate-500">
@@ -261,7 +250,7 @@ function RecoveryTab({ records, onSave }) {
               onChange={(e) => setStatuses((p) => ({ ...p, [r.id]: e.target.value }))}
               className={`
                 text-xs px-3 py-1.5 rounded-lg border font-medium
-                focus:outline-none transition-all cursor-pointer flex-shrink-0
+                focus:outline-none transition-all cursor-pointer shrink-0
                 ${statuses[r.id] === "RECOVERED"
                   ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
                   : "dark:bg-slate-800 bg-slate-100 dark:text-slate-300 text-slate-600 dark:border-slate-700 border-slate-200"
@@ -281,23 +270,82 @@ function RecoveryTab({ records, onSave }) {
   )
 }
 
-// ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function StudentDetailPage() {
-  const { id }        = useParams()
-  const navigate      = useNavigate()
+  const { id } = useParams()
+  const navigate = useNavigate()
   const [tab, setTab] = useState("attendance")
-  const [preview,  setPreview]  = useState(null)
-  const [student,  setStudent]  = useState(MOCK_STUDENT)
+  const [preview, setPreview] = useState(null)
+  const [student, setStudent] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [classes, setClasses] = useState([])
 
-  const updateField = (key) => (val) => {
-    setStudent((p) => ({ ...p, [key]: val }))
-    // TODO: API call
-    console.log("Update student:", key, val)
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true)
+        const [studentData, classesData] = await Promise.all([
+          getStudentById(id),
+          getClasses()
+        ])
+        setStudent(studentData)
+        setClasses(classesData)
+      } catch (err) {
+        toast.error(err?.response?.data?.message || "Failed to fetch student")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (id) {
+      fetchData()
+    }
+  }, [id])
+
+  const getClassName = () => {
+    if (!student?.classId || !classes.length) return student?.className || "—"
+    const cls = classes.find((c) => c.id === student.classId)
+    return cls?.name || student?.className || "—"
+  }
+
+  const getDivisionName = (value) => {
+    if (!value) return "—"
+    return typeof value === "string" ? value : value?.name || value?.id || "—"
+  }
+
+  const updateField = (key) => async (val) => {
+    if (!student) return
+    const updated = { ...student, [key]: val }
+    
+    try {
+      await updateStudent(id, {
+        [key === "className" ? "name" : key]: val
+      })
+      setStudent(updated)
+      toast.success("Student updated")
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to update student")
+    }
   }
 
   const handleImage = (e) => {
     const file = e.target.files[0]
     if (file) setPreview(URL.createObjectURL(file))
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm dark:text-slate-400 text-slate-500">Loading...</p>
+      </div>
+    )
+  }
+
+  if (!student) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm dark:text-slate-400 text-slate-500">Student not found</p>
+      </div>
+    )
   }
 
   return (
@@ -316,7 +364,7 @@ export default function StudentDetailPage() {
         <div className="flex flex-col gap-6 sm:flex-row">
 
           {/* Profile image — square with rounded corners */}
-          <div className="flex flex-col items-center flex-shrink-0 gap-2">
+          <div className="flex flex-col items-center gap-2 shrink-0">
             <div className="relative">
               <div className="flex items-center justify-center w-24 h-24 overflow-hidden border-2 rounded-2xl dark:bg-slate-800 bg-slate-100 dark:border-slate-700 border-slate-200">
                 {preview || student.profileImageUrl ? (
@@ -331,7 +379,7 @@ export default function StudentDetailPage() {
                   </span>
                 )}
               </div>
-              <label className="absolute flex items-center justify-center text-white transition-all bg-blue-600 rounded-full shadow-lg cursor-pointer  -bottom-1 -right-1 w-7 h-7 hover:bg-blue-500">
+              <label className="absolute flex items-center justify-center text-white transition-all bg-blue-600 rounded-full shadow-lg cursor-pointer -bottom-1 -right-1 w-7 h-7 hover:bg-blue-500">
                 <Camera size={13} />
                 <input
                   type="file"
@@ -350,8 +398,8 @@ export default function StudentDetailPage() {
           <div className="grid flex-1 grid-cols-2 gap-3">
             <EditableField label="Name"          value={student.name}            onSave={updateField("name")}            />
             <EditableField label="Phone"         value={student.phone}           onSave={updateField("phone")}           />
-            <EditableField label="Class"         value={student.className}       onSave={updateField("className")}       />
-            <EditableField label="Division"      value={student.divisionName}    onSave={updateField("divisionName")}    />
+            <EditableField label="Class"         value={getClassName()}          onSave={updateField("className")}       />
+            <EditableField label="Division"      value={getDivisionName(student.divisionId)}    onSave={updateField("divisionName")}    />
             <EditableField label="Roll No."      value={student.rollNumber}      onSave={updateField("rollNumber")}      />
             <EditableField label="Admission No." value={student.admissionNumber} onSave={updateField("admissionNumber")} />
             <EditableField label="Parent"        value={student.parentName}      onSave={updateField("parentName")}      />
