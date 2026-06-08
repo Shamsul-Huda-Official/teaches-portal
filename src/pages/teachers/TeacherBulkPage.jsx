@@ -298,7 +298,7 @@ export default function TeacherBulkPage() {
                           <td />
                           <td colSpan={COLUMNS.length + 2} className="px-3 pb-2">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <AlertCircle size={11} className="flex-shrink-0 text-red-400" />
+                              <AlertCircle size={11} className="flex-text-red-400 shrink-0" />
                               {errs.map((err) => (
                                 <span key={err} className="text-xs text-red-400">{err}</span>
                               ))}

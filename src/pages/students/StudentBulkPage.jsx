@@ -5,7 +5,7 @@ import * as XLSX from "xlsx"
 import toast from "react-hot-toast"
 import { Button, Card, PageHeader, Badge, SectionHeader, Select } from "../../components/ui"
 import { bulkCreateStudent } from "../../services/api/student.service"
-import { getClasses } from "../../services/api/class.service"
+import { getClasses, getClassById } from "../../services/api/class.service"
 
 const COLUMNS = [
   { key: "name",            label: "Full Name",     required: true  },
@@ -189,12 +189,13 @@ export default function StudentBulkPage() {
     setDivisionId("")
     setRows([])
     setDone(false)
+    setClassData(null)
+
+    if (!newClassId) return
 
     // Fetch class data to get divisions
     try {
-      const classesData = await getClasses()
-      // find by stringified id to match select value
-      const selected = classesData.find((c) => String(c.id) === newClassId)
+      const selected = await getClassById(newClassId)
       if (selected) {
         setClassData(selected)
       }
@@ -208,6 +209,12 @@ export default function StudentBulkPage() {
     setLoading(true)
     
     try {
+      // coerce ids to appropriate type (number if numeric, otherwise string)
+      const coerceId = (id) => {
+        if (id === null || id === undefined || id === "") return id
+        return /^\d+$/.test(String(id)) ? Number(id) : String(id)
+      }
+
       const payload = validRows.map((row) => ({
         name: row.name,
         admissionNumber: row.admissionNumber,
@@ -215,9 +222,11 @@ export default function StudentBulkPage() {
         phone: row.phone,
         parentName: row.parentName,
         email: row.email,
-        classId: classId,
-        divisionId: divisionId,
+        classId: coerceId(classId),
+        divisionId: coerceId(divisionId),
       }))
+
+      console.log('bulk upload payload sample', payload[0], 'classId type', typeof payload[0].classId, 'divisionId type', typeof payload[0].divisionId)
       
       await bulkCreateStudent(payload)
       toast.success(`${validRows.length} students imported successfully`)
@@ -418,7 +427,7 @@ export default function StudentBulkPage() {
                           <td />
                           <td colSpan={COLUMNS.length + 2} className="px-3 pb-2">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <AlertCircle size={11} className="shrink-0 text-red-400" />
+                              <AlertCircle size={11} className="text-red-400 shrink-0" />
                               {errs.map((err) => (
                                 <span key={err} className="text-xs text-red-400">{err}</span>
                               ))}
