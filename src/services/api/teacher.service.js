@@ -27,3 +27,8 @@ export const bulkCreateTeachers = async (teachers) => {
     );
     return response.data.data;
 }
+
+export const deleteTeacher = async (id) => {
+    const response = await api.delete(`/teachers/${id}`);
+    return response.data.data;
+}

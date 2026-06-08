@@ -5,7 +5,7 @@ import * as XLSX from "xlsx"
 import toast from "react-hot-toast"
 import { Button, Card, PageHeader, Badge, SectionHeader, Select } from "../../components/ui"
 import { bulkCreateStudent } from "../../services/api/student.service"
-import { getClasses, getClassById } from "../../services/api/class.service"
+import { getClasses } from "../../services/api/class.service"
 
 const COLUMNS = [
   { key: "name",            label: "Full Name",     required: true  },
@@ -189,13 +189,12 @@ export default function StudentBulkPage() {
     setDivisionId("")
     setRows([])
     setDone(false)
-    setClassData(null)
-
-    if (!newClassId) return
 
     // Fetch class data to get divisions
     try {
-      const selected = await getClassById(newClassId)
+      const classesData = await getClasses()
+      // find by stringified id to match select value
+      const selected = classesData.find((c) => String(c.id) === newClassId)
       if (selected) {
         setClassData(selected)
       }
@@ -226,6 +225,8 @@ export default function StudentBulkPage() {
         divisionId: coerceId(divisionId),
       }))
 
+      // debug log to inspect what is sent
+      // eslint-disable-next-line no-console
       console.log('bulk upload payload sample', payload[0], 'classId type', typeof payload[0].classId, 'divisionId type', typeof payload[0].divisionId)
       
       await bulkCreateStudent(payload)

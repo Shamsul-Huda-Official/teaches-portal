@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { Plus, Upload } from "lucide-react"
+import { Plus, Upload, Trash2 } from "lucide-react"
 import {
-    Button, PageHeader, EmptyState, PageLoader, Pagination, SearchInput, Table, Badge, Avatar
+    Button, PageHeader, EmptyState, PageLoader, Pagination, SearchInput, Table, Badge, Avatar, ConfirmModal
 } from "../../components/ui"
 
-import { getTeachers } from "../../services/api/teacher.service"
+import {
+    deleteTeacher,
+    getTeachers,
+} from "../../services/api/teacher.service"
 import toast from "react-hot-toast"
 
 const PAGE_SIZE = 10;
@@ -16,6 +19,9 @@ export default function TeachersListPage() {
     const [query, setQuery] = useState("")
     const [page, setPage] = useState(1)
     const [loading, setLoading] = useState(true)
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+    const [selectedTeacher, setSelectedTeacher] = useState(null)
+    const [isDeleting, setIsDeleting] = useState(false)
     
     useEffect(() => {
         fetchTeachers()
@@ -54,6 +60,27 @@ export default function TeachersListPage() {
         setPage(1)
     }
 
+    const handleDeleteClick = (teacher) => {
+        setSelectedTeacher(teacher)
+        setDeleteModalOpen(true)
+    }
+
+    const handleDeleteConfirm = async () => {
+        if (!selectedTeacher) return
+        setIsDeleting(true)
+        try {
+            await deleteTeacher(selectedTeacher.id)
+            toast.success("Teacher deleted successfully")
+            await fetchTeachers()
+            setDeleteModalOpen(false)
+            setSelectedTeacher(null)
+        } catch (err) {
+            toast.error(err?.response?.data?.message || 'Failed to delete teacher')
+        } finally {
+            setIsDeleting(false)
+        }
+    }
+
     const columns = [
         {
             key: "name",
@@ -78,6 +105,22 @@ export default function TeachersListPage() {
             label: "Status",
             render: (v) => (
                 <Badge color={v ? "green" : "red"}>{v ? "Active" : "Inactive"}</Badge>
+            ),
+        },
+        {
+            key: "actions",
+            label: "Actions",
+            render: (_, row) => (
+                <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeleteClick(row)
+                    }}
+                >
+                    <Trash2 size={14} />
+                </Button>
             ),
         },
     ]
@@ -137,6 +180,14 @@ export default function TeachersListPage() {
                     <Pagination page={page} totalPages={totalPages} onChange={setPage} />
                 </>
             )}
+            <ConfirmModal
+                open={deleteModalOpen}
+                title="Delete teacher"
+                message={`Are you sure you want to delete ${selectedTeacher?.name ?? "this teacher"}? This action cannot be undone.`}
+                onConfirm={handleDeleteConfirm}
+                onCancel={() => setDeleteModalOpen(false)}
+                loading={isDeleting}
+            />
         </div>
     )
 }
