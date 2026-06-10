@@ -22,6 +22,7 @@ import ClassCreatePage from "./pages/classes/ClassCreatePage"
 import ClassDetailPage from "./pages/classes/ClassDetailPage"
 import SubjectsListPage from "./pages/subjects/SubjectsListPage"
 import SubjectCreatePage from "./pages/subjects/SubjectCreatePage"
+import SubjectDetailPage from "./pages/subjects/SubjectDetailPage"
 import SubjectBulkPage from "./pages/subjects/SubjectBulkPage"
 import PeriodsListPage from "./pages/periods/PeriodsListPage"
 import PeriodCreatePage from "./pages/periods/PeriodCreatePage"
@@ -60,6 +61,7 @@ export default function App() {
             <Route path="/subjects"                          element={<SubjectsListPage />} />
             <Route path="/subjects/create"                   element={<SubjectCreatePage />} />
             <Route path="/subjects/bulk"                     element={<SubjectBulkPage />} />
+            <Route path="/subjects/:id"                      element={<SubjectDetailPage />} />
             <Route path="/periods"                           element={<PeriodsListPage />} />
             <Route path="/periods/create"                    element={<PeriodCreatePage />} />
             <Route path="/periods/:id/assign"                element={<PeriodAssignPage />} />

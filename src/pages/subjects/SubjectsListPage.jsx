@@ -1,54 +1,89 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { Plus, Upload } from "lucide-react"
 import {
   Button, PageHeader, Table, Badge,
-  EmptyState, Pagination, SearchInput, Select
+  EmptyState, Pagination, SearchInput, Select, PageLoader
 } from "../../components/ui"
-
-const MOCK_CLASSES = [
-  { value: "1", label: "Grade 9"  },
-  { value: "2", label: "Grade 10" },
-]
-
-const MOCK_DIVISIONS = {
-  "1": [{ value: "a", label: "A" }, { value: "b", label: "B" }],
-  "2": [{ value: "a", label: "A" }, { value: "b", label: "B" }],
-}
-
-const MOCK_SUBJECTS = [
-  { id: "1",  name: "Mathematics",    classId: "1", divisionId: "a", isActive: true  },
-  { id: "2",  name: "English",        classId: "1", divisionId: "a", isActive: true  },
-  { id: "3",  name: "Physics",        classId: "1", divisionId: "a", isActive: true  },
-  { id: "4",  name: "Chemistry",      classId: "1", divisionId: "a", isActive: false },
-  { id: "5",  name: "Biology",        classId: "1", divisionId: "b", isActive: true  },
-  { id: "6",  name: "Social Science", classId: "1", divisionId: "b", isActive: true  },
-  { id: "7",  name: "Historiography", classId: "1", divisionId: "b", isActive: true  },
-  { id: "8",  name: "Mathematics",    classId: "2", divisionId: "a", isActive: true  },
-  { id: "9",  name: "English",        classId: "2", divisionId: "a", isActive: true  },
-  { id: "10", name: "Physics",        classId: "2", divisionId: "b", isActive: true  },
-]
+import toast from "react-hot-toast"
+import { getSubjects } from "../../services/api/subject.service"
+import { getClasses } from "../../services/api/class.service"
 
 const PAGE_SIZE = 7
 
 export default function SubjectsListPage() {
   const navigate = useNavigate()
-  const [classId,    setClassId]    = useState("")
+  const [subjects, setSubjects] = useState([])
+  const [classes, setClasses] = useState([])
+  const [classId, setClassId] = useState("")
   const [divisionId, setDivisionId] = useState("")
-  const [query,      setQuery]      = useState("")
-  const [page,       setPage]       = useState(1)
+  const [query, setQuery] = useState("")
+  const [page, setPage] = useState(1)
+  const [loading, setLoading] = useState(true)
 
-  const divisions = classId ? (MOCK_DIVISIONS[classId] || []) : []
-  const isReady   = classId && divisionId
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true)
+        const classData = await getClasses()
+        setClasses(classData)
+      } catch (err) {
+        toast.error(err?.response?.data?.message || "Failed to load subjects")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  useEffect(() => {
+    if (!classId || !divisionId) {
+      return
+    }
+
+    const fetchSubjects = async () => {
+      try {
+        setLoading(true)
+        const subjectData = await getSubjects({ classId, divisionId })
+        setSubjects(subjectData)
+      } catch (err) {
+        toast.error(err?.response?.data?.message || "Failed to load subjects")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchSubjects()
+  }, [classId, divisionId])
+
+  const selectedClass = classes.find((c) => String(c.id) === classId)
+  const classOptions = classes.map((c) => ({ value: String(c.id), label: c.name }))
+  const divisions = selectedClass?.divisions
+    ? selectedClass.divisions.map((d) => ({
+        value: String(d.id),
+        label: typeof d.name === "string" ? d.name : d.name?.toString() || String(d.id),
+      }))
+    : []
+  const isReady = classId && divisionId
 
   const q = query.trim().toLowerCase()
 
   const filtered = isReady
-    ? MOCK_SUBJECTS.filter((s) =>
-        s.classId    === classId &&
-        s.divisionId === divisionId &&
-        (!q || s.name.toLowerCase().includes(q))
-      )
+    ? subjects.filter((s) => {
+        const subjectClassId = String(s.classId || s.class?.id || "")
+        const subjectDivisionId = String(
+          typeof s.divisionId === "string"
+            ? s.divisionId
+            : s.divisionId?.id || s.divisionId || ""
+        )
+
+        return (
+          subjectClassId === classId &&
+          subjectDivisionId === divisionId &&
+          (!q || s.name?.toLowerCase().includes(q))
+        )
+      })
     : []
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
@@ -59,6 +94,13 @@ export default function SubjectsListPage() {
     setDivisionId("")
     setQuery("")
     setPage(1)
+    setSubjects([])
+  }
+
+  const handleDivision = (e) => {
+    setDivisionId(e.target.value)
+    setPage(1)
+    setSubjects([])
   }
 
   const columns = [
@@ -77,6 +119,10 @@ export default function SubjectsListPage() {
       ),
     },
   ]
+
+  if (loading && !classes.length) {
+    return <PageLoader text="Loading subjects..." />
+  }
 
   return (
     <div>
@@ -103,7 +149,7 @@ export default function SubjectsListPage() {
       <div className="flex flex-wrap items-center justify-center gap-3 mb-6">
         <Select
           placeholder="Select Class"
-          options={MOCK_CLASSES}
+          options={classOptions}
           value={classId}
           onChange={handleClass}
         />
@@ -111,7 +157,7 @@ export default function SubjectsListPage() {
           placeholder="Select Division"
           options={divisions}
           value={divisionId}
-          onChange={(e) => { setDivisionId(e.target.value); setPage(1) }}
+          onChange={handleDivision}
           disabled={!classId}
         />
         {isReady && (

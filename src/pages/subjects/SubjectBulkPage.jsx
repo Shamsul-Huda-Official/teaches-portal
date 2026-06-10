@@ -1,22 +1,12 @@
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { Upload, Download, Trash2, Plus, Check, X, AlertCircle } from "lucide-react"
 import * as XLSX from "xlsx"
+import toast from "react-hot-toast"
 import { Button, Card, PageHeader, Badge, SectionHeader, Select } from "../../components/ui"
-
-const MOCK_CLASSES = [
-  { value: "1", label: "Grade 9"  },
-  { value: "2", label: "Grade 10" },
-]
-
-const MOCK_DIVISIONS = {
-  "1": [{ value: "a", label: "A" }, { value: "b", label: "B" }],
-  "2": [{ value: "a", label: "A" }, { value: "b", label: "B" }],
-}
-
-const COLUMNS = [
-  { key: "name", label: "Subject Name", required: true },
-]
+import { bulkCreateSubjects } from "../../services/api/subject.service"
+import { getClasses } from "../../services/api/class.service"
+import { getTeachers } from "../../services/api/teacher.service"
 
 function validateRow(row) {
   const errors = []
@@ -24,7 +14,7 @@ function validateRow(row) {
   return errors
 }
 
-function downloadTemplate(classId, divisionId) {
+function downloadTemplate() {
   const headers = ["Subject Name"]
   const sample  = ["Mathematics"]
   const ws = XLSX.utils.aoa_to_sheet([headers, sample])
@@ -54,11 +44,46 @@ export default function SubjectBulkPage() {
   const fileRef     = useRef(null)
   const [classId,    setClassId]    = useState("")
   const [divisionId, setDivisionId] = useState("")
+  const [teacherId,  setTeacherId]  = useState("")
   const [rows,       setRows]       = useState([])
   const [loading,    setLoading]    = useState(false)
   const [done,       setDone]       = useState(false)
 
-  const divisions = classId ? (MOCK_DIVISIONS[classId] || []) : []
+  const [classes, setClasses]   = useState([])
+  const [teachers, setTeachers] = useState([])
+  const [rawClasses, setRawClasses] = useState([])
+
+  const selectedClass = rawClasses.find((c) => String(c.id) === classId)
+  const divisions = selectedClass?.divisions
+    ? selectedClass.divisions.map((division) => ({
+        value: String(division.id),
+        label: typeof division.name === "string" ? division.name : division.name?.toString() || division.id,
+      }))
+    : []
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [classData, teacherData] = await Promise.all([
+          getClasses(),
+          getTeachers(),
+        ])
+
+        setRawClasses(classData)
+        setClasses(classData.map((c) => ({ value: String(c.id), label: c.name })))
+        setTeachers(
+          teacherData.map((teacher) => ({
+            value: String(teacher.id),
+            label: teacher.name || teacher.fullName || teacher.user?.name || "Teacher",
+          }))
+        )
+      } catch (err) {
+        toast.error(err?.response?.data?.message || "Failed to load form data")
+      }
+    }
+
+    fetchData()
+  }, [])
 
   const handleFile = (e) => {
     const file = e.target.files[0]
@@ -69,7 +94,7 @@ export default function SubjectBulkPage() {
       const ws   = wb.Sheets[wb.SheetNames[0]]
       const data = XLSX.utils.sheet_to_json(ws, { defval: "" })
       const normalized = data.map((r, i) => ({
-        _id:  i,
+        _id: i,
         name: r["Subject Name"] !== undefined ? String(r["Subject Name"]) : "",
       }))
       setRows(normalized)
@@ -94,13 +119,25 @@ export default function SubjectBulkPage() {
   const invalidRows = rows.filter((r) => validateRow(r).length > 0)
 
   const handleUpload = async () => {
-    if (!classId || !divisionId || validRows.length === 0) return
+    if (!classId || !divisionId || !teacherId || validRows.length === 0) return
     setLoading(true)
+
     try {
-      await new Promise((r) => setTimeout(r, 1000))
+      const payload = validRows.map((row) => ({
+        name: row.name,
+        classId,
+        divisionId,
+        teacherId,
+      }))
+      await bulkCreateSubjects(payload)
+      toast.success(`${validRows.length} subjects imported successfully`)
       setDone(true)
+      setRows([])
+      setTimeout(() => {
+        navigate("/subjects")
+      }, 800)
     } catch (err) {
-      console.error(err)
+      toast.error(err?.response?.data?.message || "Failed to import subjects")
     } finally {
       setLoading(false)
     }
@@ -117,11 +154,11 @@ export default function SubjectBulkPage() {
       />
 
       <Card className="p-5 mb-4">
-        <SectionHeader title="Step 1 — Select Class & Division" />
-        <div className="flex gap-3">
+        <SectionHeader title="Step 1 — Select Class, Division & Teacher" />
+        <div className="grid gap-3 md:grid-cols-3">
           <Select
             placeholder="— Select Class —"
-            options={MOCK_CLASSES}
+            options={classes}
             value={classId}
             onChange={(e) => { setClassId(e.target.value); setDivisionId(""); setRows([]); setDone(false) }}
           />
@@ -131,6 +168,13 @@ export default function SubjectBulkPage() {
             value={divisionId}
             onChange={(e) => { setDivisionId(e.target.value); setRows([]); setDone(false) }}
             disabled={!classId}
+          />
+          <Select
+            placeholder="— Select Teacher —"
+            options={teachers}
+            value={teacherId}
+            onChange={(e) => { setTeacherId(e.target.value); setRows([]); setDone(false) }}
+            disabled={teachers.length === 0}
           />
         </div>
       </Card>
@@ -152,7 +196,7 @@ export default function SubjectBulkPage() {
         <label className={`
           flex flex-col items-center justify-center gap-3 py-10
           border-2 border-dashed rounded-xl transition-all
-          ${!classId || !divisionId
+          ${!classId || !divisionId || !teacherId
             ? "dark:border-slate-800 border-slate-200 opacity-50 cursor-not-allowed"
             : "dark:border-slate-700 border-slate-200 cursor-pointer dark:hover:border-blue-500/50 hover:border-blue-400"
           }
@@ -162,7 +206,7 @@ export default function SubjectBulkPage() {
           </div>
           <div className="text-center">
             <p className="text-sm font-medium dark:text-slate-200 text-slate-700">
-              {!classId || !divisionId ? "Select class & division first" : "Click to upload .xlsx file"}
+              {!classId || !divisionId || !teacherId ? "Select class, division & teacher first" : "Click to upload .xlsx file"}
             </p>
             <p className="text-xs dark:text-slate-500 text-slate-400 mt-0.5">
               Only Excel files (.xlsx, .xls) accepted
@@ -174,7 +218,7 @@ export default function SubjectBulkPage() {
             accept=".xlsx,.xls"
             className="hidden"
             onChange={handleFile}
-            disabled={!classId || !divisionId}
+            disabled={!classId || !divisionId || !teacherId}
           />
         </label>
       </Card>
@@ -269,7 +313,7 @@ export default function SubjectBulkPage() {
                   <Check size={14} /> {validRows.length} subjects imported!
                 </span>
               )}
-              <Button onClick={handleUpload} loading={loading} disabled={validRows.length === 0 || !classId || !divisionId}>
+              <Button onClick={handleUpload} loading={loading} disabled={validRows.length === 0 || !classId || !divisionId || !teacherId}>
                 Import {validRows.length} Subjects
               </Button>
             </div>
