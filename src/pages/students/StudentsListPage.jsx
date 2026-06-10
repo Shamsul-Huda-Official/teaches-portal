@@ -40,13 +40,13 @@ export default function StudentsListPage() {
         fetchClasses()
     }, [])
 
-    // Fetch students (all) when class/division changes; we'll filter client-side
+    // Fetch students from server using query params when class/division changes
     useEffect(() => {
         if (!classId || !divisionId) return
 
         const fetchStudents = async () => {
             try {
-                const data = await getStudents()
+                const data = await getStudents({ classId, divisionId })
                 setStudents(data)
             } catch (err) {
                 toast.error(err?.response?.data?.message || "Failed to fetch students")
@@ -60,17 +60,12 @@ export default function StudentsListPage() {
 
     const filtered = classId && divisionId
         ? students.filter((s) => {
-            const matchClass = s.classId === classId
-            const matchDivision = 
-                typeof s.divisionId === "string" 
-                    ? s.divisionId === divisionId 
-                    : s.divisionId?.id === divisionId
             const matchSearch = !q
                 ? true
                 : s.name?.toLowerCase().includes(q) ||
                 s.admissionNumber?.toLowerCase().includes(q) ||
                 s.phone?.startsWith(q)
-            return matchClass && matchDivision && matchSearch
+            return matchSearch
         })
         : []
 
@@ -98,17 +93,18 @@ export default function StudentsListPage() {
         if (!selectedStudent) return
         setIsDeleting(true)
             try {
-            await deleteStudent(selectedStudent.id)
-            toast.success("Student deleted successfully")
-            const data = await getStudents()
-            setStudents(data)
-            setDeleteModalOpen(false)
-            setSelectedStudent(null)
-        } catch (err) {
-            toast.error(err?.response?.data?.message || "Failed to delete student")
-        } finally {
-            setIsDeleting(false)
-        }
+                await deleteStudent(selectedStudent.id)
+                toast.success("Student deleted successfully")
+                const params = classId && divisionId ? { classId, divisionId } : {}
+                const data = await getStudents(params)
+                setStudents(data)
+                setDeleteModalOpen(false)
+                setSelectedStudent(null)
+            } catch (err) {
+                toast.error(err?.response?.data?.message || "Failed to delete student")
+            } finally {
+                setIsDeleting(false)
+            }
     }
 
     const selectedClass = classes.find(

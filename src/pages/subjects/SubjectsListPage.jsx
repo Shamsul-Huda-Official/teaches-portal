@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { Plus, Upload } from "lucide-react"
+import { Plus, Upload, Trash2 } from "lucide-react"
 import {
   Button, PageHeader, Table, Badge,
-  EmptyState, Pagination, SearchInput, Select, PageLoader
+  EmptyState, Pagination, SearchInput, Select, PageLoader, ConfirmModal
 } from "../../components/ui"
 import toast from "react-hot-toast"
-import { getSubjects } from "../../services/api/subject.service"
+import { getSubjects, deleteSubject } from "../../services/api/subject.service"
 import { getClasses } from "../../services/api/class.service"
 
 const PAGE_SIZE = 7
@@ -20,6 +20,9 @@ export default function SubjectsListPage() {
   const [query, setQuery] = useState("")
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [selectedSubject, setSelectedSubject] = useState(null)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -118,7 +121,42 @@ export default function SubjectsListPage() {
         <Badge color={v ? "green" : "red"}>{v ? "Active" : "Inactive"}</Badge>
       ),
     },
+    {
+      key: "actions",
+      label: "Actions",
+      render: (_, row) => (
+        <Button
+          variant="danger"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation()
+            setSelectedSubject(row)
+            setDeleteModalOpen(true)
+          }}
+        >
+          <Trash2 size={14} />
+        </Button>
+      ),
+    },
   ]
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedSubject) return
+    setIsDeleting(true)
+    try {
+      await deleteSubject(selectedSubject.id)
+      toast.success("Subject deleted")
+      const params = classId && divisionId ? { classId, divisionId } : {}
+      const data = await getSubjects(params)
+      setSubjects(data)
+      setDeleteModalOpen(false)
+      setSelectedSubject(null)
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to delete subject")
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   if (loading && !classes.length) {
     return <PageLoader text="Loading subjects..." />
@@ -213,6 +251,14 @@ export default function SubjectsListPage() {
           <Pagination page={page} totalPages={totalPages} onChange={setPage} />
         </>
       )}
+      <ConfirmModal
+        open={deleteModalOpen}
+        title="Delete subject"
+        message={`Are you sure you want to delete ${selectedSubject?.name ?? "this subject"}? This action cannot be undone.`}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setDeleteModalOpen(false)}
+        loading={isDeleting}
+      />
     </div>
   )
 }

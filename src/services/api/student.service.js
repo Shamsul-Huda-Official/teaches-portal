@@ -1,7 +1,7 @@
 import api from "./api";
 
-export const getStudents = async () => {
-    const response = await api.get(`/students`)
+export const getStudents = async (params = {}) => {
+    const response = await api.get(`/students`, { params })
     return response.data.data
 };
 
