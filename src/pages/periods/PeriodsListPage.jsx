@@ -1,63 +1,80 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { Plus } from "lucide-react"
 import {
   Button, PageHeader, Table, Badge,
-  EmptyState, Pagination, Select
+  EmptyState, Pagination, Select, ConfirmModal, PageLoader
 } from "../../components/ui"
 import { DAYS_OF_WEEK } from "../../constants"
-
-const MOCK_CLASSES = [
-  { value: "1", label: "Grade 9"  },
-  { value: "2", label: "Grade 10" },
-]
-
-const MOCK_DIVISIONS = {
-  "1": [{ value: "a", label: "A" }, { value: "b", label: "B" }],
-  "2": [{ value: "a", label: "A" }, { value: "b", label: "B" }],
-}
-
-const MOCK_PERIODS = [
-  { id: "1",  name: "Period 1", classId: "1", divisionId: "a", dayOfWeek: 1, length: 45, subject: "Mathematics", teacher: "Unais Hudawi" },
-  { id: "2",  name: "Period 2", classId: "1", divisionId: "a", dayOfWeek: 1, length: 45, subject: "English",     teacher: "Sara Mathew"  },
-  { id: "3",  name: "Period 3", classId: "1", divisionId: "a", dayOfWeek: 1, length: 45, subject: "Physics",     teacher: null           },
-  { id: "4",  name: "Period 1", classId: "1", divisionId: "a", dayOfWeek: 2, length: 45, subject: "Chemistry",   teacher: "Ahmed Khan"   },
-  { id: "5",  name: "Period 2", classId: "1", divisionId: "a", dayOfWeek: 2, length: 45, subject: null,          teacher: null           },
-  { id: "6",  name: "Period 1", classId: "1", divisionId: "b", dayOfWeek: 1, length: 45, subject: "Biology",     teacher: "Meera Pillai" },
-  { id: "7",  name: "Period 2", classId: "1", divisionId: "b", dayOfWeek: 1, length: 45, subject: "Social",      teacher: "Riya Nair"    },
-  { id: "8",  name: "Period 1", classId: "2", divisionId: "a", dayOfWeek: 3, length: 45, subject: "Mathematics", teacher: "Rahul Sharma" },
-  { id: "9",  name: "Period 2", classId: "2", divisionId: "a", dayOfWeek: 3, length: 45, subject: null,          teacher: null           },
-  { id: "10", name: "Period 1", classId: "2", divisionId: "b", dayOfWeek: 4, length: 45, subject: "English",     teacher: "Fatima Zahra" },
-]
+import toast from "react-hot-toast"
+import { getPeriods, deletePeriod } from "../../services/api/period.service"
+import { getClasses } from "../../services/api/class.service"
 
 const PAGE_SIZE = 7
 
 export default function PeriodsListPage() {
   const navigate = useNavigate()
-  const [classId,    setClassId]    = useState("")
+  const [classes, setClasses] = useState([])
+  const [periods, setPeriods] = useState([])
+  const [classId, setClassId] = useState("")
   const [divisionId, setDivisionId] = useState("")
-  const [dayOfWeek,  setDayOfWeek]  = useState("")
-  const [page,       setPage]       = useState(1)
+  const [dayOfWeek, setDayOfWeek] = useState("")
+  const [page, setPage] = useState(1)
+  const [loading, setLoading] = useState(false)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [selectedPeriod, setSelectedPeriod] = useState(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
-  const divisions = classId ? (MOCK_DIVISIONS[classId] || []) : []
-  const isReady   = classId && divisionId
+  const rawDivisions = classId ? (classes.find((c) => String(c.id) === classId)?.divisions || []) : []
+  const divisions = rawDivisions.map((d) => ({
+    value: String(d.id),
+    label: typeof d.name === "string" ? d.name : d.name?.toString() || String(d.id),
+  }))
+  const isReady = classId && divisionId
+
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        const data = await getClasses()
+        setClasses(data)
+      } catch (err) {
+        toast.error(err?.response?.data?.message || "Failed to load classes")
+      }
+    }
+    fetch()
+  }, [])
+
+  useEffect(() => {
+    if (!classId || !divisionId) return
+    const fetch = async () => {
+      try {
+        setLoading(true)
+        const params = { classId, divisionId }
+        if (dayOfWeek) params.dayOfWeek = Number(dayOfWeek)
+        const data = await getPeriods(params)
+        setPeriods(data || [])
+      } catch (err) {
+        toast.error(err?.response?.data?.message || "Failed to load periods")
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetch()
+  }, [classId, divisionId, dayOfWeek])
 
   const filtered = isReady
-    ? MOCK_PERIODS.filter((p) =>
-        p.classId    === classId &&
-        p.divisionId === divisionId &&
-        (dayOfWeek ? p.dayOfWeek === Number(dayOfWeek) : true)
-      )
+    ? periods.filter((p) => (dayOfWeek ? p.dayOfWeek === Number(dayOfWeek) : true))
     : []
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
-  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   const handleClass = (e) => {
     setClassId(e.target.value)
     setDivisionId("")
     setDayOfWeek("")
     setPage(1)
+    setPeriods([])
   }
 
   const columns = [
@@ -106,7 +123,48 @@ export default function PeriodsListPage() {
           <Badge color="amber">Unassigned</Badge>
         ),
     },
+    {
+      key: "actions",
+      label: "Actions",
+      render: (_, row) => (
+        <Button
+          variant="danger"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation()
+            setSelectedPeriod(row)
+            setDeleteModalOpen(true)
+          }}
+        >
+          Delete
+        </Button>
+      ),
+    },
   ]
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedPeriod) return
+    setIsDeleting(true)
+    try {
+      await deletePeriod(selectedPeriod.id)
+      toast.success("Period deleted")
+      // refresh
+      const params = { classId, divisionId }
+      if (dayOfWeek) params.dayOfWeek = Number(dayOfWeek)
+      const data = await getPeriods(params)
+      setPeriods(data || [])
+      setDeleteModalOpen(false)
+      setSelectedPeriod(null)
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to delete period")
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  if (loading && !classes.length) {
+    return <PageLoader text="Loading periods..." />
+  }
 
   return (
     <div>
@@ -123,7 +181,7 @@ export default function PeriodsListPage() {
       <div className="flex flex-wrap items-center justify-center gap-3 mb-6">
         <Select
           placeholder="Select Class"
-          options={MOCK_CLASSES}
+          options={classes.map((c) => ({ value: String(c.id), label: c.name }))}
           value={classId}
           onChange={handleClass}
         />
@@ -189,6 +247,14 @@ export default function PeriodsListPage() {
           <Pagination page={page} totalPages={totalPages} onChange={setPage} />
         </>
       )}
+      <ConfirmModal
+        open={deleteModalOpen}
+        title="Delete period"
+        message={`Are you sure you want to delete ${selectedPeriod?.name ?? "this period"}? This action cannot be undone.`}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setDeleteModalOpen(false)}
+        loading={isDeleting}
+      />
     </div>
   )
 }

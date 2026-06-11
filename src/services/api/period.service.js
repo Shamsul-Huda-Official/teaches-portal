@@ -1,7 +1,7 @@
 import api from "./api";
 
-export const getPeiods = async () => {
-    const response = await api.get(`/periods`);
+export const getPeriods = async (params = {}) => {
+    const response = await api.get(`/periods`, { params });
     return response.data.data;
 };
 

@@ -60,7 +60,7 @@ const NAV_ITEMS = [
     children: [
       { label: "All Subjects", to: "/subjects" },
       { label: "Add Subject",  to: "/subjects/create" },
-      { label: "Bulk Upload",  to: "/subjects/bulk" },
+      // { label: "Bulk Upload",  to: "/subjects/bulk" },
     ],
   },
   {

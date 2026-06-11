@@ -1,29 +1,41 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { Button, Input, Select, Card, PageHeader } from "../../components/ui"
+import toast from "react-hot-toast"
+import { createPeriod } from "../../services/api/period.service"
+import { getClasses } from "../../services/api/class.service"
 import { DAYS_OF_WEEK } from "../../constants"
  
-const MOCK_CLASSES = [
-  { value: "1", label: "Grade 9" },
-  { value: "2", label: "Grade 10" },
-]
-const MOCK_DIVISIONS = {
-  "1": [{ value: "a", label: "A" }, { value: "b", label: "B" }],
-  "2": [{ value: "a", label: "A" }, { value: "b", label: "B" }],
-}
- 
 const INIT = {
-  classId: "", divisionId: "",
-  dayOfWeek: "", length: "45", count: "1",
+    classId: "", divisionId: "",
+    dayOfWeek: "", length: "45", count: "1",
 }
-
 export default function PeriodCreatePage() {
-    const navigate = useNavigate()
-    const [form, setForm] = useState(INIT)
-    const [error, setError] = useState("")
-    const [loading, setLoading] = useState(false)
-    
-    const divisions = form.classId ? (MOCK_DIVISIONS[form.classId] || []) : []
+        const navigate = useNavigate()
+        const [form, setForm] = useState(INIT)
+        const [error, setError] = useState("")
+        const [loading, setLoading] = useState(false)
+        const [classes, setClasses] = useState([])
+        const [rawClasses, setRawClasses] = useState([])
+
+        useEffect(() => {
+            const fetch = async () => {
+                try {
+                    const data = await getClasses()
+                    setRawClasses(data)
+                    setClasses(data.map((c) => ({ value: String(c.id), label: c.name })))
+                } catch (err) {
+                    toast.error(err?.response?.data?.message || "Failed to load classes")
+                }
+            }
+            fetch()
+        }, [])
+
+                const rawDivisions = rawClasses.find((c) => String(c.id) === form.classId)?.divisions || []
+                const divisions = rawDivisions.map((division) => ({
+                    value: String(division.id),
+                    label: typeof division.name === "string" ? division.name : division.name?.toString() || String(division.id),
+                }))
     const validate = () => {
         const e = {}
             if (!form.classId)    e.classId   = "Required"
@@ -36,18 +48,37 @@ export default function PeriodCreatePage() {
             setError(e)
             return Object.keys(e).length === 0
     }
-    const set      = (key) => (e) => setForm((p) => ({ ...p, [key]: e.target.value }))
-    const setClass = (e)   => setForm((p) => ({ ...p, classId: e.target.value, divisionId: "" }))
+    const set = (key) => (e) => setForm((p) => ({ ...p, [key]: e.target.value }))
+    const setClass = (e) => setForm((p) => ({ ...p, classId: e.target.value, divisionId: "" }))
 
-    const handleSubmit = (e) => {
-        e.preventDefault()
-        if (!validate()) return 
-        setLoading(true)
-        setTimeout(() => {
-            setLoading(false)
-            navigate("/periods")
-        }, 800)
-    }
+        const handleSubmit = async (e) => {
+                e.preventDefault()
+                if (!validate()) return
+                setLoading(true)
+                try {
+                    // Backend expects Monday=1..Sunday=7. Frontend uses Sunday=0..Saturday=6.
+                    // Convert 0 -> 7 so Sunday is accepted, and send a numeric value.
+                    const dayRow = form.dayOfWeek === "" ? undefined : Number(form.dayOfWeek)
+                    
+                    const payload = {
+                        classId: form.classId,
+                        divisionId: form.divisionId,
+                        dayOfWeek: dayRow,
+                        length: Number(form.length),
+                        count: Number(form.count)
+                    }
+                    console.log("createPeriod payload:", payload)
+                    await createPeriod(payload)
+                    toast.success("Periods created")
+                    navigate("/periods")
+                } catch (err) {
+                            console.error("createPeriod error:", err?.response || err)
+                            const serverMsg = err?.response?.data?.message || JSON.stringify(err?.response?.data)
+                            toast.error(serverMsg || "Failed to create periods")
+                        } finally {
+                            setLoading(false)
+                        }
+        }
 
     return (
         <div>
@@ -59,7 +90,7 @@ export default function PeriodCreatePage() {
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 <Select
                     label="Class"
-                    options={MOCK_CLASSES}
+                    options={classes}
                     value={form.classId}
                     onChange={setClass}
                     error={error.classId}
