@@ -1,0 +1,6 @@
+export * from "./api/auth.service"
+export * from "./api/class.service"
+export * from "./api/period.service"
+export * from "./api/student.service"
+export * from "./api/subject.service"
+export * from "./api/teacher.service"

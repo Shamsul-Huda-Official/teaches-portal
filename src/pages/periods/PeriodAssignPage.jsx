@@ -1,39 +1,11 @@
 import { useState } from "react"
-import { useNavigate, useParams } from "react-router-dom"
+import { useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { ArrowLeft } from "lucide-react"
 import { Button, Select, Card, Avatar } from "../../components/ui"
 import { DAYS_OF_WEEK } from "../../constants"
+import toast from "react-hot-toast"
+import {getClasses, getPeriods, getSubjects, getTeachers, assignSubject} from "../../services"
 
-const MOCK_CLASS    = { name: "Grade 9" }
-const MOCK_DIVISION = { name: "A" }
-const MOCK_TEACHER  = { name: "Unais Hudawi", profileImageUrl: null }
-
-const MOCK_SUBJECTS = [
-  { value: "1", label: "Mathematics"    },
-  { value: "2", label: "English"        },
-  { value: "3", label: "Physics"        },
-  { value: "4", label: "Chemistry"      },
-  { value: "5", label: "Biology"        },
-  { value: "6", label: "Social Science" },
-  { value: "7", label: "Historiography" },
-]
-
-const MOCK_PERIODS = [
-  { id: "1", name: "Period 1", dayOfWeek: 1, length: 45, subjectId: "",  teacherId: "" },
-  { id: "2", name: "Period 2", dayOfWeek: 1, length: 45, subjectId: "2", teacherId: "" },
-  { id: "3", name: "Period 3", dayOfWeek: 1, length: 45, subjectId: "",  teacherId: "" },
-  { id: "4", name: "Period 4", dayOfWeek: 1, length: 45, subjectId: "4", teacherId: "" },
-  { id: "5", name: "Period 5", dayOfWeek: 1, length: 45, subjectId: "",  teacherId: "" },
-  { id: "6", name: "Period 6", dayOfWeek: 2, length: 45, subjectId: "1", teacherId: "" },
-]
-
-const MOCK_TEACHERS = [
-  { value: "1", label: "Unais Hudawi"  },
-  { value: "2", label: "Sara Mathew"   },
-  { value: "3", label: "Ahmed Khan"    },
-  { value: "4", label: "Riya Nair"     },
-  { value: "5", label: "Meera Pillai"  },
-]
 
 function groupByDay(periods) {
   return periods.reduce((acc, p) => {
@@ -46,15 +18,74 @@ function groupByDay(periods) {
 
 export default function PeriodAssignPage() {
   const navigate = useNavigate()
+  const [ searchParams] = useSearchParams()
+  const classId = searchParams.get("classId")
+  const divisionId = searchParams.get("division")
+  
+  const [classes, setClasses] = useState([])
+  const [periods, setPeriods] = useState([])
+  const [subjects, setSubjects] = useState([])
+  const [teachers, setTeachers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false) 
+  const [assignments, setAssignments] = useState({})
+  
+  useEffect(() => {
+    if (!classId || !divisionId) return
+    const fetchAll = async () => {
+      setLoading(true)
+      try {
+        const [cls, per, sub, tea] = await  Promise.all([
+          getClasses(),
+          getPeriods({ classId, divisionId}),
+          getSubjects({ classId, divisionId}),
+          getTeachers(),
+        ])
+        setClasses(cls || [])
+        setPeriods(per || [])
+        setSubjects(sub || [])
+        setTeachers(tea || [])
+        
+        const init = {}
+        per?.forEach((p) => {
+          init[p.id] = {
+            subjectId: p.subjectId ?? "",
+            teacherId: p.teacherId ?? "",
+          }
+        })
+        setAssignments(init)
+      } catch (err) {
+        toast.error("Failed to load data.")
+      } finally { 
+        setLoading(false)
+      }
+    }
+    fetchAll()
+  }, [classId, divisionId])
+  
+  const selectedClass = classes.find((c) => c.id === classId)
+  const selectedDivision = selectedClass?.divisions?.find((d) => d.id === divisionId)
+  
+  const getAssignment = (period) => ({
+    subjectId: assignments[period.id]?.subjectId ?? "",
+    teacherId: assignments[period.id]?.teacherId ?? "",
+  })
+  
+  const setField = (periodId, field, val ) => 
+    setAssignments((prev) => ({
+      ...prev,
+      [periodId]: { ...prev[periodId], [field]: val}
+    })
+  
 
-  const [assignments, setAssignments] = useState(
-    Object.fromEntries(
-      MOCK_PERIODS.map((p) => [
-        p.id,
-        { subjectId: p.subjectId, teacherId: p.teacherId },
-      ])
-    )
-  )
+  // const [assignments, setAssignments] = useState(
+  //   Object.fromEntries(
+  //     MOCK_PERIODS.map((p) => [
+  //       p.id,
+  //       { subjectId: p.subjectId, teacherId: p.teacherId },
+  //     ])
+  //   )
+  // )
   const [loading, setLoading] = useState(false)
 
   const setField = (periodId, field, val) =>
